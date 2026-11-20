@@ -1,5 +1,6 @@
 import contextlib
 import io
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -28,6 +29,31 @@ class ValidationTests(unittest.TestCase):
     def test_rejects_mismatched_source_version_and_unknown_locator(self):
         self.draft.write_text(self.text.replace("version: v1", "version: v2").replace("[S4]", "[S9]"), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "source URL must match.*unknown source IDs: S9"):
+            validate.validate_page(self.draft)
+
+    def test_accepts_non_arxiv_sources_without_version(self):
+        for kind in ("conference", "blog", "news"):
+            with self.subTest(kind=kind):
+                entry_id = f"{kind}-example-agent-evaluation"
+                text = self.text.replace("id: arxiv-2406.12045", f"id: {entry_id}")
+                text = text.replace("  version: v1\n", "").replace(
+                    "https://arxiv.org/pdf/2406.12045v1", "https://example.org/agent-evaluation"
+                )
+                self.draft.write_text(text, encoding="utf-8")
+                self.assertEqual(validate.validate_page(self.draft)["id"], entry_id)
+
+    def test_accepts_news_without_specialized_terms_or_a_procedure(self):
+        text = self.text.replace("id: arxiv-2406.12045", "id: news-example")
+        text = re.sub(r"^authors:.*$", "authors: []", text, flags=re.M)
+        text = text.replace("  version: v1\n", "").replace(
+            "https://arxiv.org/pdf/2406.12045v1", "https://example.org/news"
+        )
+        text = re.sub(r"(?ms)^## Terminology\n.*?(?=^## )", "## Terminology\n\nNo specialized terminology.\n\n", text)
+        text = re.sub(r"(?ms)^## Worked Example\n.*?(?=^## )", "## Worked Example\n\nNo method or procedure to demonstrate.\n\n", text)
+        self.draft.write_text(text, encoding="utf-8")
+        validate.validate_page(self.draft)
+        self.draft.write_text(text.replace("https://example.org/news", "https:///news"), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "HTTP\\(S\\) URL with a host"):
             validate.validate_page(self.draft)
 
     def test_rejects_missing_required_section_and_example_label(self):

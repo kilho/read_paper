@@ -2,6 +2,7 @@ import argparse
 import re
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import yaml
 from jsonschema import Draft202012Validator
@@ -52,9 +53,25 @@ def validate_page(path):
     if errors:
         raise ValueError("; ".join(errors))
 
-    paper = metadata["id"].removeprefix("arxiv-")
-    if metadata["source"]["url"] != f"https://arxiv.org/pdf/{paper}{metadata['source']['version']}":
-        errors.append("source URL must match the paper ID and version")
+    entry_id = metadata["id"]
+    source = metadata["source"]
+    if entry_id.startswith("arxiv-"):
+        paper = entry_id.removeprefix("arxiv-")
+        if source["url"] != f"https://arxiv.org/pdf/{paper}{source['version']}":
+            errors.append("source URL must match the paper ID and version")
+    else:
+        try:
+            url = urlsplit(source["url"])
+            valid_url = (
+                bool(url.hostname)
+                and url.username is None
+                and "\\" not in url.netloc
+                and url.port != 0
+            )
+        except ValueError:
+            valid_url = False
+        if not valid_url:
+            errors.append("source URL must be an HTTP(S) URL with a host and no credentials")
     if re.findall(r"^# (.+)$", body, re.M) != [metadata["title"]]:
         errors.append("expected one H1 matching the frontmatter title")
 
@@ -69,10 +86,16 @@ def validate_page(path):
         for name, content in sections.items()
         if not content.strip() and name not in rules["allow_empty"]
     )
+    article = entry_id.startswith(("blog-", "news-", "web-"))
+    not_applicable = rules["article_not_applicable"] if article else {}
+    terminology = sections.get("Terminology", "")
     columns = rules["terminology_columns"]
-    if not has_terminology_table(sections.get("Terminology", ""), columns):
+    if terminology.strip() != not_applicable.get("Terminology") and not has_terminology_table(terminology, columns):
         errors.append("Terminology must be a Markdown table with nonempty rows: " + " | ".join(columns))
-    if not any(f"**{label}:**" in sections.get("Worked Example", "") for label in rules["example_types"]):
+    example = sections.get("Worked Example", "")
+    if example.strip() != not_applicable.get("Worked Example") and not any(
+        f"**{label}:**" in example for label in rules["example_types"]
+    ):
         errors.append("Worked Example must include a recognized example label")
 
     citable_text = "\n".join([parts[0], *(content for name, content in sections.items() if name != "Source Locators")])
