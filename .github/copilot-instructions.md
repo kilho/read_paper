@@ -7,5 +7,5 @@
 - In **Why**, separately explain why the challenge matters, how named prior work tackled it and what it missed, and what this paper does differently and why. In **When**, give a concrete reader use case and say what needs a separate check.
 - Teach essential terms in context and walk through a checked example from input to outcome. A page that passes schema validation is not necessarily understandable; review whether a new reader can explain the setup, distinguish it from prior work, and apply the example.
 - Keep schemas, workflow skills, task prompts, and harness orchestration separate.
-- After answering a paper question, append a concise, sourced H3 Q&A to its **FAQ** unless it is already covered. Leave the rest of the page unchanged and validate.
+- For paper questions, check the wiki and matching local extract in `sources/` before re-fetching; consult the original when the extract is insufficient. Append a concise, sourced H3 Q&A to the **FAQ** unless already covered. Leave the rest of the page unchanged and validate.
 - Preserve accepted [corrections](../feedback/wiki/README.md) in the wiki without creating separate feedback records unless requested. Use [improve-skill](skills/improve-skill/SKILL.md) to review the latest commit for recurring workflow gaps. Propose skill or prompt changes in a pull request with evaluation results for human approval.

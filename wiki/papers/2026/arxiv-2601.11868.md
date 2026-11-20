@@ -190,14 +190,19 @@ The verifier supplies an outcome; trajectory analysis helps explain failures. Us
 
 ### What is an agent scaffold?
 
-The **model** decides what to do next; the **scaffold** is the software that lets it act. It presents the task and available tools, executes the model's requested actions, returns observations such as terminal output, and manages what context the model sees on the next turn. It is not the model or the benchmark. The same model can perform differently with a different scaffold, so a Terminal-Bench score describes a **model–scaffold pair**. [S3]
+A **scaffold** is the software around the model that turns its requests into actions. The model can ask to read a file, but the scaffold actually runs the request and shows the model what came back. Different scaffolds can give the same model different tools, such as a dedicated file editor or just a terminal. That's why a Terminal-Bench score is for a **model–scaffold pair**, not the model alone. [S3]
 
 ### What is Harbor?
 
-**Harbor is the evaluation harness, not the agent.** Terminal-Bench defines the tasks in Harbor's task format: a task instruction, a container environment, verifier tests, a reference solution, and a time limit. Harbor runs trials with the selected agent and environment, then runs the verifier against the final container state. The paper's experiments used Daytona to run 32–100 containers in parallel. Harbor can run Terminus 2 as well as other agents; it does not choose their actions. [S1] [S3]
+**Harbor runs the test; it doesn't solve the task.** It starts the task's container, runs the chosen agent under the task's time limit, and runs the verifier tests afterward. **Terminal-Bench 2.0** supplies the tasks; **Harbor** runs them. Harbor can run Terminus 2 or another scaffold. [S1] [S3]
 
 ### What is Terminus 2?
 
-**Terminus 2 is the authors' minimal agent scaffold for comparing models through the same terminal interface.** The model generates keystrokes, Terminus 2 sends them to a persistent `tmux` shell inside the task's Docker container, and the captured terminal output goes back to the model for its next decision. Because it sends keystrokes, the model can use interactive programs as well as ordinary shell commands. There is no separate file-editing tool, and when the model reaches its context limit, Terminus 2 uses a model call to summarize progress so it can continue. Other scaffolds in the benchmark are not limited to this one tool. [S3] [Appendix F, p. 51, Figure 34](https://arxiv.org/pdf/2601.11868v1#page=51)
+**Terminus 2 is one specific scaffold, not a model.** Its only tool is a terminal: it sends the model's keystrokes to a persistent `tmux` session in the container and sends the screen output back. The model can use a text editor through that terminal, but it doesn't get a separate file-editing tool. On long runs, Terminus 2 can ask a model to summarize progress when the context fills up. [S3] [Appendix F, p. 51, Figure 34](https://arxiv.org/pdf/2601.11868v1#page=51)
 
-For example, on a migration task, **Harbor** starts the benchmark trial, the **model** decides which file to inspect, **Terminus 2** sends the keystrokes and returns the output, and **Harbor** runs the task's tests after the agent finishes. [S1] [Appendix F](https://arxiv.org/pdf/2601.11868v1#page=51)
+**Illustrative example:** A toy task says, "Read `name.txt` and save a greeting in `greeting.txt`." The test expects `Hello, Ada!`.
+
+1. **Harbor sets up the trial.** It starts a container with `name.txt` and launches the agent. The task tells the agent what to do, but the verifier is not provided to the agent at the start.
+2. **The model picks an action; Terminus 2 carries it out.** The model asks to type `cat name.txt`. Terminus 2 sends those keystrokes to the terminal and returns the output, `Ada`. Now the model knows which name to use.
+3. **The model makes the next decision.** It asks to type `echo 'Hello, Ada!' > greeting.txt`. Terminus 2 sends the keystrokes, and the shell writes the file. If the model only *says* it wrote the file, the file still won't exist.
+4. **Harbor runs the verifier.** It checks whether the file contains the expected greeting. A correct file passes even if the agent used a different command to create it. [S1] [S3] [Appendix F](https://arxiv.org/pdf/2601.11868v1#page=51)

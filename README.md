@@ -4,6 +4,8 @@ Browse the [research wiki](wiki/index.md) or try its [five-minute comprehension 
 To add an entry, give [ingest-paper](.github/skills/ingest-paper/SKILL.md) an arXiv, conference, blog, or news URL. To revise one, follow the [correction workflow](feedback/wiki/README.md).
 Use [improve-skill](.github/skills/improve-skill/SKILL.md) to review the latest commit for reusable workflow improvements.
 
+`sources/` is a local, Git-ignored cache of originals and searchable extracts for follow-up questions. A fresh clone can rebuild it from the source URLs in wiki frontmatter.
+
 ## Validate the wiki
 
 With Python 3.10 or later:
