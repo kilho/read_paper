@@ -5,4 +5,4 @@
 - Follow [ingest-paper](skills/ingest-paper/SKILL.md) for authoring and the [schema](../schemas/paper.schema.yaml) for structure. Ground claims in sources; popularity is not evidence. Use deterministic code for validation, ID resolution, and deduplication.
 - Keep schemas, workflow skills, task prompts, and harness orchestration separate.
 - After answering a paper question, append a concise, sourced H3 Q&A to its **FAQ** unless it is already covered. Leave the rest of the page unchanged and validate.
-- Preserve accepted [corrections](../feedback/wiki/README.md). Propose skill or prompt changes for recurring issues in a pull request with evaluation results for human approval.
+- Preserve accepted [corrections](../feedback/wiki/README.md). Use [improve-skill](skills/improve-skill/SKILL.md) to review the latest commit for recurring workflow gaps. Propose skill or prompt changes in a pull request with evaluation results for human approval.

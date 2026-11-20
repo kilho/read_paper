@@ -765,4 +765,4 @@ These three specifications will determine most of the system's quality. The skil
 ## 15. To-Do List
 
 - [ ] **Add a special-topics folder.** Create `wiki/topics/special/` for topic syntheses built from selected wiki pages. Each synthesis should link to the pages it draws on rather than duplicate their content.
-- [ ] **Create a commit-driven skill improvement workflow.** Implement `improve-skill` to review the latest commit's diff, identify changes that reveal a reusable improvement, and propose targeted updates to the relevant skills. Skip one-off corrections and submit proposed updates with evaluation results for human approval.
+- [x] **Create a commit-driven skill improvement workflow.** [`improve-skill`](../.github/skills/improve-skill/SKILL.md) reviews the latest commit's diff and proposes evaluated skill changes for human approval. Skip one-off corrections.
