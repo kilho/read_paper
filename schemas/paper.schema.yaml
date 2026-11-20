@@ -1,0 +1,59 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+type: object
+additionalProperties: false
+required: [schema_version, id, title, year, authors, source, sources]
+properties:
+  schema_version:
+    const: 1
+  id:
+    type: string
+    pattern: '^arxiv-[0-9]{4}\.[0-9]{4,5}$'
+  title:
+    type: string
+    pattern: '\S'
+  year:
+    type: integer
+    minimum: 1991
+  authors:
+    type: array
+    minItems: 1
+    items:
+      type: string
+      pattern: '\S'
+  source:
+    type: object
+    additionalProperties: false
+    required: [version, url]
+    properties:
+      version:
+        type: string
+        pattern: '^v[1-9][0-9]*$'
+      url:
+        type: string
+        pattern: '^https://arxiv\.org/pdf/[0-9]{4}\.[0-9]{4,5}v[1-9][0-9]*$'
+  sources:
+    type: object
+    minProperties: 1
+    propertyNames:
+      pattern: '^S[1-9][0-9]*$'
+    additionalProperties:
+      type: string
+      pattern: '\S'
+  relationships:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required: [paper, type, reason]
+      properties:
+        paper:
+          type: string
+          pattern: '^arxiv-[0-9]{4}\.[0-9]{4,5}$'
+        type:
+          enum: [extends, contrasts_with, uses, evaluates, related_to]
+        reason:
+          type: string
+          pattern: '\S'
+x-page:
+  headings: [TL;DR, What, Why, When, How, Worked Example, Differentiators, Evidence, Relationships, Technical Depth, Source Locators]
+  example_types: [Paper example, Derived example, Illustrative example]
