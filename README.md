@@ -1,7 +1,7 @@
 # read_paper
 
 Browse the [research wiki](wiki/index.md) or try its [five-minute comprehension check](evals/comprehension/arxiv-2406.12045.md).
-To add an entry, give [ingest-paper](.github/skills/ingest-paper/SKILL.md) an arXiv, conference, blog, or news URL. To revise one, follow the [correction workflow](feedback/wiki/README.md).
+Use [ingest-paper](.github/skills/ingest-paper/SKILL.md) with an arXiv, conference, blog, or news URL to add an entry, or with an existing entry to revise it.
 Use [explain-detail](.github/skills/explain-detail/SKILL.md) with an existing entry and an optional focus to add deeper evidence or technical explanation.
 Use [improve-skill](.github/skills/improve-skill/SKILL.md) to review the latest commit for reusable workflow improvements.
 

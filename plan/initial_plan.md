@@ -74,7 +74,7 @@ Skills are reusable procedures for reading, explaining, comparing, and updating 
 
 **4. Harnesses manage execution.**
 
-The harness coordinates skills, validates outputs, manages feedback, and updates the repository.
+The harness coordinates skills, validates outputs, and updates the repository.
 
 **5. Humans improve both content and process.**
 
@@ -570,12 +570,7 @@ ai-research-wiki/
 │   ├── ingest.py
 │   ├── validate.py
 │   ├── link.py
-│   ├── feedback.py
 │   └── maintain.py
-│
-├── feedback/
-│   ├── wiki/
-│   └── skills/
 │
 ├── evals/
 │   ├── comprehension/
@@ -593,7 +588,7 @@ Relationships and paper metadata remain inside wiki files.
 
 The `discovery/` directory contains paper selection configurations and reading queues, not a separate knowledge graph.
 
-The `feedback/` directory holds existing records and any feedback explicitly requested to be saved. Routine corrections are reflected in the wiki and its Git history.
+Use feedback as temporary input to verify that wiki and skill updates address it. Keep the resulting changes, not separate feedback records.
 
 ---
 
@@ -678,7 +673,7 @@ Build:
 
 Build:
 
-1. Structured feedback collection
+1. Coverage checks against feedback and relevant changes
 2. Skill improvement proposals
 3. Prompt and schema revisions
 4. Regression evaluation
@@ -756,7 +751,7 @@ Before implementation, finalize three specifications:
 
 1. **Paper Wiki Schema v1:** Exact sections, fields, required examples, and expected reading depth.
 2. **Paper Discovery and Ranking v1:** Sources, quality signals, personalized priorities, and reading queue.
-3. **Human Feedback Protocol v1:** How corrections are captured, applied, generalized, and evaluated.
+3. **Human Feedback Protocol v1:** How corrections are applied, generalized, and verified without retaining feedback records.
 
 These three specifications will determine most of the system's quality. The skills, prompts, and harness can then be designed around them.
 
