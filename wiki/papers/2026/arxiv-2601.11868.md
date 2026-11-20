@@ -109,9 +109,6 @@ relationships:
 
 # Terminal-Bench: Benchmarking Agents on Hard, Realistic Tasks in Command Line Interfaces
 
-[Read the original paper (arXiv v1)](https://arxiv.org/pdf/2601.11868v1).
-For the five-minute path, read through **Evidence**.
-
 ## Overview
 
 Terminal-Bench measures whether a model-driven agent can finish realistic command-line work, from modernizing legacy software to implementing research code. The paper introduces both a task framework and Terminal-Bench 2.0, a suite of 89 tasks. It scores what the agent leaves behind in a container, not whether it followed a prescribed sequence of commands. [S1] [S2]
@@ -190,3 +187,17 @@ The verifier supplies an outcome; trajectory analysis helps explain failures. Us
 - S7: τ-bench arXiv:2406.12045v1, §§3.1–3.3, pp. 3–5
 
 ## FAQ
+
+### What is an agent scaffold?
+
+The **model** decides what to do next; the **scaffold** is the software that lets it act. It presents the task and available tools, executes the model's requested actions, returns observations such as terminal output, and manages what context the model sees on the next turn. It is not the model or the benchmark. The same model can perform differently with a different scaffold, so a Terminal-Bench score describes a **model–scaffold pair**. [S3]
+
+### What is Harbor?
+
+**Harbor is the evaluation harness, not the agent.** Terminal-Bench defines the tasks in Harbor's task format: a task instruction, a container environment, verifier tests, a reference solution, and a time limit. Harbor runs trials with the selected agent and environment, then runs the verifier against the final container state. The paper's experiments used Daytona to run 32–100 containers in parallel. Harbor can run Terminus 2 as well as other agents; it does not choose their actions. [S1] [S3]
+
+### What is Terminus 2?
+
+**Terminus 2 is the authors' minimal agent scaffold for comparing models through the same terminal interface.** The model generates keystrokes, Terminus 2 sends them to a persistent `tmux` shell inside the task's Docker container, and the captured terminal output goes back to the model for its next decision. Because it sends keystrokes, the model can use interactive programs as well as ordinary shell commands. There is no separate file-editing tool, and when the model reaches its context limit, Terminus 2 uses a model call to summarize progress so it can continue. Other scaffolds in the benchmark are not limited to this one tool. [S3] [Appendix F, p. 51, Figure 34](https://arxiv.org/pdf/2601.11868v1#page=51)
+
+For example, on a migration task, **Harbor** starts the benchmark trial, the **model** decides which file to inspect, **Terminus 2** sends the keystrokes and returns the output, and **Harbor** runs the task's tests after the agent finishes. [S1] [Appendix F](https://arxiv.org/pdf/2601.11868v1#page=51)

@@ -76,8 +76,13 @@ then:
 x-page:
   headings: [Overview, What, Terminology, Why, When, How, Worked Example, Differentiators, Evidence, Relationships, Technical Depth, Source Locators, FAQ]
   allow_empty: [FAQ]
-  why_guidance: Explain why the challenge matters, how prior work addressed it, what gap remained, and how the main differentiator addresses that gap.
-  when_guidance: Name a realistic task, who would use the contribution, and what needs a separate check.
+  why_guidance: >-
+    Use three short, labeled blocks: why the problem matters, what named prior work
+    did and what it missed, and what this paper does differently and why it addresses
+    that gap. Cite the comparison; save finer details for Differentiators.
+  when_guidance: >-
+    Name who would use the contribution and for what realistic task. For a benchmark,
+    explain what a score can verify in that scenario and what needs a separate check.
   terminology_columns: [Term, Meaning in this paper, Why it matters]
   example_types: [Paper example, Derived example, Illustrative example]
   article_not_applicable:

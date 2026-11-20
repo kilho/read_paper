@@ -18,9 +18,6 @@ relationships: []
 
 # τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains
 
-[Read the original paper (arXiv v1)](https://arxiv.org/pdf/2406.12045v1).
-For the five-minute path, read through **Evidence**. **Technical Depth** adds the scoring equations and benchmark design details.
-
 ## Overview
 
 τ-bench measures how reliably an agent can resolve a user's request when it has to ask questions, use tools, and follow a written policy. It checks the resulting database and required answers, then uses **pass^k** to measure how often a task succeeds on **every** one of *k* attempts. [S2]

@@ -412,7 +412,6 @@ The system should:
 2. Preserve the existing correct information.
 3. Verify the new example.
 4. Record the modification in Git.
-5. Save the feedback for possible process improvement.
 
 ### 7.2 Improve skills and prompts
 
@@ -591,7 +590,7 @@ Relationships and paper metadata remain inside wiki files.
 
 The `discovery/` directory contains paper selection configurations and reading queues, not a separate knowledge graph.
 
-The `feedback/` directory records human corrections and improvement proposals.
+The `feedback/` directory holds existing records and any feedback explicitly requested to be saved. Routine corrections are reflected in the wiki and its Git history.
 
 ---
 
