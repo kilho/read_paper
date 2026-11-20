@@ -24,6 +24,25 @@ def read_page(path):
     return yaml.safe_load("\n".join(lines[1:end])), "\n".join(lines[end + 1 :])
 
 
+def table_cells(line):
+    line = line.strip()
+    if not line.startswith("|") or not line.endswith("|"):
+        return []
+    return [cell.strip() for cell in re.split(r"(?<!\\)\|", line)[1:-1]]
+
+
+def has_terminology_table(content, columns):
+    lines = content.strip().splitlines()
+    if len(lines) < 3 or table_cells(lines[0]) != columns:
+        return False
+    separator = table_cells(lines[1])
+    return (
+        len(separator) == len(columns)
+        and all(re.fullmatch(r":?-{3,}:?", cell) for cell in separator)
+        and all(len(row) == len(columns) and all(row) for row in map(table_cells, lines[2:]))
+    )
+
+
 def validate_page(path):
     metadata, body = read_page(path)
     errors = [
@@ -45,11 +64,19 @@ def validate_page(path):
     rules = SCHEMA["x-page"]
     if headings != rules["headings"]:
         errors.append("expected these H2 sections in order: " + ", ".join(rules["headings"]))
-    errors.extend(f"empty section: {name}" for name, content in sections.items() if not content.strip())
+    errors.extend(
+        f"empty section: {name}"
+        for name, content in sections.items()
+        if not content.strip() and name not in rules["allow_empty"]
+    )
+    columns = rules["terminology_columns"]
+    if not has_terminology_table(sections.get("Terminology", ""), columns):
+        errors.append("Terminology must be a Markdown table with nonempty rows: " + " | ".join(columns))
     if not any(f"**{label}:**" in sections.get("Worked Example", "") for label in rules["example_types"]):
         errors.append("Worked Example must include a recognized example label")
 
-    citations = set(re.findall(r"\[(S[0-9]+)\]", re.split(r"^## Source Locators$", body, flags=re.M)[0]))
+    citable_text = "\n".join([parts[0], *(content for name, content in sections.items() if name != "Source Locators")])
+    citations = set(re.findall(r"\[(S[0-9]+)\]", citable_text))
     sources = metadata["sources"]
     unknown = citations - sources.keys()
     if unknown:

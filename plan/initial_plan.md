@@ -48,9 +48,7 @@ For example:
 id: arxiv-xxxx.xxxxx
 title: Example Paper
 year: 2026
-topics:
-  - conversational-retrieval
-  - agent-memory
+topics: []
 
 relationships:
   - paper: arxiv-yyyy.yyyyy
@@ -63,6 +61,8 @@ relationships:
 ```
 
 A graph or search index can be generated from the wiki later.
+
+Leave paper topic tags empty until enough papers have been reviewed to establish a useful taxonomy.
 
 **2. Schemas define knowledge structure.**
 
@@ -190,13 +190,13 @@ Each paper should have a consistent structure.
 
 | Section | Required content | Target |
 |---|---|---|
-| **1. TL;DR** | Core contribution in 2–3 sentences | 20 seconds |
-| **2. What** | Problem, proposed solution, important terminology | 45 seconds |
-| **3. Why** | Motivation and limitations of existing approaches | 45 seconds |
-| **4. When** | Applicable scenarios, assumptions, and limitations | 45 seconds |
+| **1. Overview** | Core contribution in 2–3 sentences | 20 seconds |
+| **2. What + Terminology** | Problem and proposed solution, followed by a short table of topic-specific or ambiguous terms | 45 seconds |
+| **3. Why** | Why the challenge matters, how prior work tackled it, what gap remained, and what this paper does differently to address it | 45 seconds |
+| **4. When** | A realistic use case, what the contribution helps verify or accomplish, and what requires a separate check | 45 seconds |
 | **5. How** | Main algorithm, architecture, equations | 2 minutes |
 | **6. Worked Example** | Concrete input, intermediate steps, output | 2 minutes |
-| **7. Differentiators** | Comparison with the closest related methods | 1 minute |
+| **7. Differentiators** | Detailed comparison with the closest related methods, expanding on the main difference introduced in Why | 1 minute |
 | **8. Evidence** | Main results, ablations, experimental limitations | 1 minute |
 | **9. Relationships** | Connections to concepts and other papers | 30 seconds |
 
@@ -206,7 +206,7 @@ These are reading-time targets, not rigid content limits. A difficult paper may 
 
 ### 4.2 Explain terminology in context
 
-For every important technical term, provide:
+Use a short **Terminology** table after **What**, with columns **Term**, **Meaning in this paper**, and **Why it matters**. For each essential topic-specific or ambiguous term, provide:
 
 1. A concise definition.
 2. Why it matters to the paper.
@@ -227,6 +227,8 @@ Avoid explaining general terminology that the intended reader is already likely 
 Instead, focus on terminology necessary to understand the paper's contribution.
 
 ### 4.3 Explain when to use the method
+
+Start with a concrete task a reader might actually face. For a benchmark, explain who or what it can evaluate, what its score can verify, and what needs a separate evaluation.
 
 Every paper should answer:
 

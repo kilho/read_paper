@@ -1,10 +1,10 @@
 $schema: https://json-schema.org/draft/2020-12/schema
 type: object
 additionalProperties: false
-required: [schema_version, id, title, year, authors, source, sources]
+required: [schema_version, id, title, year, authors, topics, source, sources]
 properties:
   schema_version:
-    const: 1
+    const: 4
   id:
     type: string
     pattern: '^arxiv-[0-9]{4}\.[0-9]{4,5}$'
@@ -17,6 +17,13 @@ properties:
   authors:
     type: array
     minItems: 1
+    items:
+      type: string
+      pattern: '\S'
+  topics:
+    description: Curated topic tags. Write topics as an empty list until the wiki has enough reviewed papers to establish a taxonomy.
+    type: array
+    uniqueItems: true
     items:
       type: string
       pattern: '\S'
@@ -55,5 +62,10 @@ properties:
           type: string
           pattern: '\S'
 x-page:
-  headings: [TL;DR, What, Why, When, How, Worked Example, Differentiators, Evidence, Relationships, Technical Depth, Source Locators]
+  headings: [Overview, What, Terminology, Why, When, How, Worked Example, Differentiators, Evidence, Relationships, Technical Depth, Source Locators, FAQ]
+  allow_empty: [FAQ]
+  why_guidance: Explain why the challenge matters, how prior work addressed it, what gap remained, and how the main differentiator addresses that gap.
+  when_guidance: Name a realistic task, who would use the contribution, and what needs a separate check.
+  terminology_columns: [Term, Meaning in this paper, Why it matters]
   example_types: [Paper example, Derived example, Illustrative example]
+  faq_guidance: Start empty. Record reader questions as H3s with concise, sourced answers.

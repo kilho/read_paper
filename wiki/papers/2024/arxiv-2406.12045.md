@@ -1,9 +1,10 @@
 ---
-schema_version: 1
+schema_version: 4
 id: arxiv-2406.12045
 title: "τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains"
 year: 2024
 authors: [Shunyu Yao, Noah Shinn, Pedram Razavi, Karthik Narasimhan]
+topics: []
 source:
   version: v1
   url: https://arxiv.org/pdf/2406.12045v1
@@ -20,7 +21,7 @@ relationships: []
 [Read the original paper (arXiv v1)](https://arxiv.org/pdf/2406.12045v1).
 For the five-minute path, read through **Evidence**. **Technical Depth** adds the scoring equations and benchmark design details.
 
-## TL;DR
+## Overview
 
 τ-bench measures how reliably an agent can resolve a user's request when it has to ask questions, use tools, and follow a written policy. It checks the resulting database and required answers, then uses **pass^k** to measure how often a task succeeds on **every** one of *k* attempts. [S2]
 
@@ -28,13 +29,28 @@ For the five-minute path, read through **Evidence**. **Technical Depth** adds th
 
 This is a benchmark, not a new agent algorithm. The agent gets a domain policy and tools that read or change a database. A language model plays the user from a private scenario, so the agent often has to ask for information before it can act. The paper implements retail and airline environments. [S2] [S3]
 
+## Terminology
+
+| Term | Meaning in this paper | Why it matters |
+| --- | --- | --- |
+| Domain policy | The rules the agent is given for retail or airline tasks. [S2] [S3] | A tool may allow an action the policy prohibits, such as a return without confirmation. |
+| Task vs. episode | A task is the fixed scenario; an episode is one run of that scenario with the simulated user. [S2] | The same task can yield different conversations and outcomes. |
+| Target database state | The expected contents of the database after the task is completed. [S2] | The scorer checks the result, not whether the agent followed a reference sequence of tool calls. |
+| pass^k vs. pass@k | Success on **all** of *k* attempts vs. success on **at least one**. [S2] | The first measures consistency; the second measures whether retrying can produce a success. |
+
 ## Why
 
-A tool call can be valid but still return the wrong item or leave the user's question unanswered. The scorer can catch those outcome errors. It may miss a skipped confirmation if the final state and answer are both right. Repeated trials address a separate question: can the agent resolve the same request when the conversation unfolds differently? [S1] [S2]
+**Why solve this problem?** In customer service, the first message may not give the agent enough information or authorization to act. A valid tool call alone doesn't show that the agent resolved the request or followed the rules. [S1] [S2]
+
+**What did prior work do?** Tool-use benchmarks such as BFCL and ToolBench evaluated tool calls from an initial request; offline task-oriented dialogue benchmarks evaluated responses on fixed conversations. Neither setup tests whether an agent can ask for missing details as the dialogue unfolds and then use the answers to carry out a policy-constrained task. [S1]
+
+**What does τ-bench do differently, and why?** It combines an adaptive simulated user, a domain policy, and tools that change a database in the same episode. Checking the final database and required answers lets different valid conversations earn credit, while repeating the task tests whether the agent can succeed across those variations. The scorer can still miss a skipped confirmation if the final state and answer are both right. [S2]
 
 ## When
 
-Use this design when requests require several turns, tool calls can change state, and a task has a single annotatable target state. It is less informative when several outcomes would be legitimate, when success cannot be read from state or required output, or when the procedure itself must be audited. Simulated users introduce dialogue variation but are not evidence of performance with real customers. [S2] [S3]
+**Use τ-bench to compare customer-support agents on realistic, simulated retail and airline tasks.** For example, a shopper asks to return an item without saying which one. Can the agent ask for the missing detail, update the correct order, and tell the shopper the refund amount? The benchmark can check the order and the answer against an expected result, then repeat the task to see whether the agent succeeds when the conversation unfolds differently. [S2] [S3]
+
+**Use a separate check for policy compliance or live performance.** The outcome score can miss a skipped confirmation if the order and answer are correct, and success with simulated users does not establish how the agent will perform with real customers. [S2] [S3]
 
 ## How
 
@@ -82,3 +98,15 @@ The authors first designed database schemas, API behavior, and policy together. 
 - S2: §3 (environment, task instances, reward, and pass^k), pp. 3–5; Figure 2
 - S3: §4 (construction and domains), pp. 5–6; Table 1
 - S4: §5 and §5.1 (experiments and main results), pp. 6–7; Table 2 and Figures 3–4
+
+## FAQ
+
+### What are native function calling, ReAct, and Act?
+
+| Method | How the agent requests a tool |
+| --- | --- |
+| **Native function calling (FC)** | The model API returns a structured tool call with a function name and arguments. The agent runtime executes it. |
+| **ReAct** | The model writes a `Thought:` followed by an `Action:` in text. The runtime parses the action, runs the tool, and feeds the result back. |
+| **Act** | The model writes only the `Action:` in text. It can still use tools and see their results; it just is not prompted to write out a thought first. |
+
+For example, all three can look up an order. Native FC sends the lookup through the API's tool-call interface; ReAct writes a thought such as "I need the order status" before the text action; Act writes just the text action. In the paper's retail comparison, native FC did best, and ReAct outperformed Act. [S4]
