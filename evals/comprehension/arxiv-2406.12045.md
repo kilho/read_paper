@@ -1,6 +1,6 @@
 # τ-bench comprehension check
 
-Read through **Evidence** in the [wiki entry](../../wiki/papers/2024/arxiv-2406.12045.md), aiming for five minutes. Close the page before answering. Record reading time and score one point per correct answer; no human timing data has been collected yet.
+Read through **Differentiators** in the [wiki entry](../../wiki/papers/2024/arxiv-2406.12045.md), aiming for five minutes. Close the page before answering. Record reading time and score one point per correct answer; no human timing data has been collected yet.
 
 1. What does the benchmark check at the end of an episode? Give one example of a policy violation it could miss.
 2. A task passes two of four trials. Compute pass^2 and pass@2 from the six pairs of trials. Why are the answers different?

@@ -79,8 +79,12 @@ def validate_page(path):
     headings = parts[1::2]
     sections = dict(zip(headings, parts[2::2]))
     rules = SCHEMA["x-page"]
-    if headings != rules["headings"]:
-        errors.append("expected these H2 sections in order: " + ", ".join(rules["headings"]))
+    optional = set(rules["optional_headings"])
+    expected_headings = [
+        name for name in rules["headings"] if name not in optional or name in sections
+    ]
+    if headings != expected_headings:
+        errors.append("expected these H2 sections in order: " + ", ".join(expected_headings))
     errors.extend(
         f"empty section: {name}"
         for name, content in sections.items()
@@ -104,8 +108,16 @@ def validate_page(path):
     unknown = citations - sources.keys()
     if unknown:
         errors.append("unknown source IDs: " + ", ".join(sorted(unknown)))
-    if not re.search(r"\[S[0-9]+\]", sections.get("Evidence", "")):
-        errors.append("Evidence must cite a source ID")
+    core_text = "\n".join(
+        sections.get(name, "")
+        for name in rules["headings"]
+        if name not in optional and name not in {"Source Locators", "FAQ"}
+    )
+    if not re.search(r"\[S[0-9]+\]", core_text):
+        errors.append("the core explanation must cite a source ID")
+    for name in rules["optional_headings"]:
+        if name in sections and not re.search(r"\[S[0-9]+\]", sections[name]):
+            errors.append(f"{name} must cite a source ID")
     expected_locators = {f"- {key}: {value}" for key, value in sources.items()}
     if expected_locators != set(sections.get("Source Locators", "").strip().splitlines()):
         errors.append("Source Locators must list each frontmatter source as '- ID: locator'")

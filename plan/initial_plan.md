@@ -182,7 +182,7 @@ This is the most important part of the system.
 
 Use a standardized paper schema organized around:
 
-**What → Why → When → How → Example → Differentiator → Evidence**
+**What → Why → When → How → Example → Differentiator**
 
 Each paper should have a consistent structure.
 
@@ -194,13 +194,12 @@ Each paper should have a consistent structure.
 | **2. What + Terminology** | Problem and proposed solution, followed by a short table of topic-specific or ambiguous terms | 45 seconds |
 | **3. Why** | Why the challenge matters, how prior work tackled it, what gap remained, and what this paper does differently to address it | 45 seconds |
 | **4. When** | A realistic use case, what the contribution helps verify or accomplish, and what requires a separate check | 45 seconds |
-| **5. How** | Main algorithm, architecture, equations | 2 minutes |
+| **5. How** | Core mechanism or evaluation workflow | 2 minutes |
 | **6. Worked Example** | Concrete input, intermediate steps, output | 2 minutes |
 | **7. Differentiators** | Detailed comparison with the closest related methods, expanding on the main difference introduced in Why | 1 minute |
-| **8. Evidence** | Main results, ablations, experimental limitations | 1 minute |
-| **9. Relationships** | Connections to concepts and other papers | 30 seconds |
+| **8. Relationships** | Connections to concepts and other papers | 30 seconds |
 
-**Total target: approximately 8–9 minutes**, with a condensed 5-minute reading path.
+**Default target: approximately five minutes.** Evidence and Technical Depth are optional additions generated on demand, not part of initial ingestion. Cite the core explanation even when neither section is present.
 
 These are reading-time targets, not rigid content limits. A difficult paper may require additional detail.
 
@@ -310,9 +309,11 @@ Contains:
 - Simplified example
 - Main differentiator
 
-This should be the default reading experience.
+This is the default reading experience produced by `ingest-paper`.
 
 ### Level 2: Ten-minute technical explanation
+
+Use `explain-detail` to add **Evidence** and **Technical Depth** to the canonical page, or pass a focus to expand only the relevant section.
 
 Adds:
 
@@ -351,7 +352,7 @@ Every wiki entry should follow a schema. Use **multiple schemas for different kn
 
 | Wiki type | Schema |
 |---|---|
-| Paper | What, Why, When, How, Example, Differentiator, Evidence |
+| Paper | What, Why, When, How, Example, Differentiator; optional Evidence and Technical Depth |
 | Concept | Definition, Intuition, Formulation, Examples, Related Methods |
 | Topic | Overview, Taxonomy, Representative Papers, Evolution, Open Problems |
 | Comparison | Problem, Methods, Differences, Evidence, Trade-offs |
@@ -462,6 +463,7 @@ Reusable research capabilities:
 |---|---|
 | `discover-papers` | Find and prioritize relevant papers |
 | `ingest-paper` | Parse sources and create a wiki entry |
+| `explain-detail` | Add or expand Evidence and Technical Depth on demand |
 | `understand-paper` | Generate technical explanations and examples |
 | `explain-method` | Explain algorithms, equations, and terminology |
 | `compare-papers` | Identify methodological differences |
@@ -547,6 +549,7 @@ ai-research-wiki/
 ├── skills/
 │   ├── discover-papers/
 │   ├── ingest-paper/
+│   ├── explain-detail/
 │   ├── understand-paper/
 │   ├── explain-method/
 │   ├── compare-papers/
@@ -639,7 +642,7 @@ Build:
 
 1. Paper schema
 2. Paper ingestion skill
-3. Five-minute and ten-minute explanations
+3. Five-minute core with `ingest-paper`; optional ten-minute explanation with `explain-detail`
 4. Worked example generation
 5. Source verification
 6. Human correction workflow
@@ -704,7 +707,7 @@ Build:
 | Metadata and relationships | **Integrate into wiki Markdown** |
 | Paper selection | Automated discovery with quality and relevance ranking |
 | Reading time | **5 minutes by default, 10 minutes for deeper understanding** |
-| Paper structure | What, Why, When, How, Example, Differentiator, Evidence |
+| Paper structure | What, Why, When, How, Example, Differentiator; optional Evidence and Technical Depth |
 | Terminology | Explain important terms in context |
 | Examples | Mandatory for important algorithms |
 | Wiki consistency | Schema-driven generation and validation |

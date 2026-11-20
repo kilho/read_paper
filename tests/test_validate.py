@@ -57,9 +57,40 @@ class ValidationTests(unittest.TestCase):
             validate.validate_page(self.draft)
 
     def test_rejects_missing_required_section_and_example_label(self):
-        self.draft.write_text(self.text.replace("## Evidence", "## Results").replace("**Illustrative example:**", ""), encoding="utf-8")
+        self.draft.write_text(self.text.replace("## Why", "## Motivation").replace("**Illustrative example:**", ""), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "expected these H2 sections.*recognized example label"):
             validate.validate_page(self.draft)
+
+    def test_accepts_core_with_either_both_or_neither_detail_section(self):
+        for omitted in ((), ("Evidence",), ("Technical Depth",), ("Evidence", "Technical Depth")):
+            with self.subTest(omitted=omitted):
+                text = self.text
+                for name in omitted:
+                    text = re.sub(rf"(?ms)^## {name}\n.*?(?=^## )", "", text)
+                self.draft.write_text(text, encoding="utf-8")
+                validate.validate_page(self.draft)
+
+    def test_requires_core_citations_even_with_cited_detail_sections(self):
+        start = self.text.index("## Overview\n")
+        end = self.text.index("## Evidence\n")
+        text = self.text[:start] + re.sub(r"\[S[0-9]+\]", "", self.text[start:end]) + self.text[end:]
+        text = re.sub(r"(?ms)^## Relationships\n.*?(?=^## )", "## Relationships\n\nNone.\n\n", text)
+        self.draft.write_text(text, encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "core explanation must cite"):
+            validate.validate_page(self.draft)
+
+    def test_rejects_misplaced_or_uncited_detail_sections(self):
+        start = self.text.index("## Evidence\n")
+        end = self.text.index("## Relationships\n", start)
+        evidence = self.text[start:end]
+        for text, error in (
+            (self.text[:start] + self.text[end:] + "\n" + evidence, "expected these H2 sections"),
+            (self.text[:start] + re.sub(r"\[S[0-9]+\]", "", evidence) + self.text[end:], "Evidence must cite"),
+        ):
+            with self.subTest(error=error):
+                self.draft.write_text(text, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, error):
+                    validate.validate_page(self.draft)
 
     def test_requires_a_topics_list_but_accepts_empty_tags(self):
         self.assertEqual(validate.validate_page(PAGE)["topics"], [])
