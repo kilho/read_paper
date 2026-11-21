@@ -28,6 +28,8 @@ A living catalog of where to find papers, get metadata, download lawful full tex
 
 ### Conference labels: examples, not exhaustive coverage
 
+For more award archives and announcements, see the [Best Paper resource list](bestpaper_list.md).
+
 No single page supplies every label. Use proceedings volumes for **publication track** (main proceedings vs. Findings) and **paper length** (Long/Short when stated), the official schedule or paper page for **presentation format** (Oral, Poster, etc.), and official announcements or selections for **recognition** (Best Paper, Highlight, etc.). These are independent: a Long Paper can appear in Findings, and a Best Paper can have both an Oral and a Poster session.
 
 | Venue edition | What these pages can verify |
