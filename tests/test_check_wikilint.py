@@ -6,10 +6,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from harness import validate
+from harness import check_wikilint
 
 
-PAGE = validate.PAPERS / "2024" / "arxiv-2406.12045.md"
+PAGE = check_wikilint.PAPERS / "2024" / "arxiv-2406.12045.md"
 
 
 class ValidationTests(unittest.TestCase):
@@ -23,13 +23,13 @@ class ValidationTests(unittest.TestCase):
     def test_candidate_correction_does_not_change_canonical_page(self):
         self.draft.write_text(self.text.replace("skipped confirmation", "missing confirmation"), encoding="utf-8")
         with contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(validate.main(["--candidate", str(self.draft)]), 0)
+            self.assertEqual(check_wikilint.main(["--candidate", str(self.draft)]), 0)
         self.assertEqual(PAGE.read_text(encoding="utf-8"), self.text)
 
     def test_rejects_mismatched_source_version_and_unknown_locator(self):
         self.draft.write_text(self.text.replace("version: v1", "version: v2").replace("[S4]", "[S9]"), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "source URL must match.*unknown source IDs: S9"):
-            validate.validate_page(self.draft)
+            check_wikilint.validate_page(self.draft)
 
     def test_accepts_non_arxiv_sources_without_version(self):
         for kind in ("conference", "blog", "news"):
@@ -40,7 +40,7 @@ class ValidationTests(unittest.TestCase):
                     "https://arxiv.org/pdf/2406.12045v1", "https://example.org/agent-evaluation"
                 )
                 self.draft.write_text(text, encoding="utf-8")
-                self.assertEqual(validate.validate_page(self.draft)["id"], entry_id)
+                self.assertEqual(check_wikilint.validate_page(self.draft)["id"], entry_id)
 
     def test_accepts_news_without_specialized_terms_or_a_procedure(self):
         text = self.text.replace("id: arxiv-2406.12045", "id: news-example")
@@ -51,15 +51,15 @@ class ValidationTests(unittest.TestCase):
         text = re.sub(r"(?ms)^## Terminology\n.*?(?=^## )", "## Terminology\n\nNo specialized terminology.\n\n", text)
         text = re.sub(r"(?ms)^## Worked Example\n.*?(?=^## )", "## Worked Example\n\nNo method or procedure to demonstrate.\n\n", text)
         self.draft.write_text(text, encoding="utf-8")
-        validate.validate_page(self.draft)
+        check_wikilint.validate_page(self.draft)
         self.draft.write_text(text.replace("https://example.org/news", "https:///news"), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "HTTP\\(S\\) URL with a host"):
-            validate.validate_page(self.draft)
+            check_wikilint.validate_page(self.draft)
 
     def test_rejects_missing_required_section_and_example_label(self):
         self.draft.write_text(self.text.replace("## Why", "## Motivation").replace("**Illustrative example:**", ""), encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "expected these H2 sections.*recognized example label"):
-            validate.validate_page(self.draft)
+            check_wikilint.validate_page(self.draft)
 
     def test_accepts_core_with_either_both_or_neither_detail_section(self):
         for omitted in ((), ("Evidence",), ("Technical Depth",), ("Evidence", "Technical Depth")):
@@ -68,7 +68,7 @@ class ValidationTests(unittest.TestCase):
                 for name in omitted:
                     text = re.sub(rf"(?ms)^## {name}\n.*?(?=^## )", "", text)
                 self.draft.write_text(text, encoding="utf-8")
-                validate.validate_page(self.draft)
+                check_wikilint.validate_page(self.draft)
 
     def test_requires_core_citations_even_with_cited_detail_sections(self):
         start = self.text.index("## Overview\n")
@@ -77,7 +77,7 @@ class ValidationTests(unittest.TestCase):
         text = re.sub(r"(?ms)^## Relationships\n.*?(?=^## )", "## Relationships\n\nNone.\n\n", text)
         self.draft.write_text(text, encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "core explanation must cite"):
-            validate.validate_page(self.draft)
+            check_wikilint.validate_page(self.draft)
 
     def test_rejects_misplaced_or_uncited_detail_sections(self):
         start = self.text.index("## Evidence\n")
@@ -90,15 +90,15 @@ class ValidationTests(unittest.TestCase):
             with self.subTest(error=error):
                 self.draft.write_text(text, encoding="utf-8")
                 with self.assertRaisesRegex(ValueError, error):
-                    validate.validate_page(self.draft)
+                    check_wikilint.validate_page(self.draft)
 
     def test_requires_a_topics_list_but_accepts_empty_tags(self):
-        self.assertEqual(validate.validate_page(PAGE)["topics"], [])
+        self.assertEqual(check_wikilint.validate_page(PAGE)["topics"], [])
         for replacement in ("", "topics: agent-reliability\n"):
             with self.subTest(replacement=replacement):
                 self.draft.write_text(self.text.replace("topics: []\n", replacement), encoding="utf-8")
                 with self.assertRaisesRegex(ValueError, "topics"):
-                    validate.validate_page(self.draft)
+                    check_wikilint.validate_page(self.draft)
 
     def test_requires_a_terminology_table_with_complete_rows(self):
         start = self.text.index("## Terminology\n")
@@ -113,7 +113,7 @@ class ValidationTests(unittest.TestCase):
             with self.subTest(content=content):
                 self.draft.write_text(self.text[:start] + content + self.text[end:], encoding="utf-8")
                 with self.assertRaisesRegex(ValueError, "Terminology must be a Markdown table"):
-                    validate.validate_page(self.draft)
+                    check_wikilint.validate_page(self.draft)
 
     def test_rejects_unresolved_relationship(self):
         self.draft.write_text(self.text.replace("relationships: []", """relationships:
@@ -122,26 +122,26 @@ class ValidationTests(unittest.TestCase):
     reason: Test an unresolved target.
 """), encoding="utf-8")
         stderr = io.StringIO()
-        with contextlib.redirect_stderr(stderr), patch.object(validate, "PAPERS", self.root / "papers"):
-            self.assertEqual(validate.main(["--candidate", str(self.draft)]), 1)
+        with contextlib.redirect_stderr(stderr), patch.object(check_wikilint, "PAPERS", self.root / "papers"):
+            self.assertEqual(check_wikilint.main(["--candidate", str(self.draft)]), 1)
         self.assertIn("invalid relationship target: arxiv-2406.12046", stderr.getvalue())
 
     def test_requires_faq_but_allows_it_to_be_empty(self):
         before_faq = self.text.split("## FAQ\n", 1)[0]
         self.draft.write_text(before_faq + "## FAQ\n", encoding="utf-8")
-        validate.validate_page(self.draft)
+        check_wikilint.validate_page(self.draft)
         self.draft.write_text(before_faq, encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "Source Locators, FAQ"):
-            validate.validate_page(self.draft)
+            check_wikilint.validate_page(self.draft)
 
     def test_checks_citations_in_faq_after_source_locators(self):
         empty_faq = self.text.split("## FAQ\n", 1)[0] + "## FAQ\n"
         question = "\n### What does the scorer check?\n\nThe final database and required answers."
         self.draft.write_text(empty_faq + question + " [S2]\n", encoding="utf-8")
-        validate.validate_page(self.draft)
+        check_wikilint.validate_page(self.draft)
         self.draft.write_text(empty_faq + question + " [S99]\n", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "unknown source IDs: S99"):
-            validate.validate_page(self.draft)
+            check_wikilint.validate_page(self.draft)
 
 
 if __name__ == "__main__":

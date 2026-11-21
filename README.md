@@ -7,14 +7,14 @@ Use [improve-skill](.github/skills/improve-skill/SKILL.md) to review the latest 
 
 `sources/` is a local, Git-ignored cache of originals and searchable extracts for follow-up questions. A fresh clone can rebuild it from the source URLs in wiki frontmatter.
 
-## Validate the wiki
+## Lint the wiki
 
 With Python 3.10 or later:
 
 ```sh
 python3 -m pip install -r requirements.txt
-python3 -m harness.validate
+python3 -m harness.check_wikilint
 python3 -m unittest discover -s tests
 ```
 
-Check an unpublished draft with `python3 -m harness.validate --candidate /path/to/draft.md`. This checks structure and references, not factual accuracy.
+Check an unpublished draft with `python3 -m harness.check_wikilint --candidate /path/to/draft.md`. This checks structure and references, not factual accuracy.

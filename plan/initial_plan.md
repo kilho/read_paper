@@ -568,7 +568,7 @@ ai-research-wiki/
 │   ├── discover.py
 │   ├── rank.py
 │   ├── ingest.py
-│   ├── validate.py
+│   ├── check_wikilint.py
 │   ├── link.py
 │   └── maintain.py
 │

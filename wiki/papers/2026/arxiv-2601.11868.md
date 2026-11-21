@@ -101,6 +101,7 @@ sources:
   S5: "§§5–6 (limitations and related work), pp. 10–11"
   S6: "Appendix H, cobol-modernization, p. 57"
   S7: "τ-bench arXiv:2406.12045v1, §§3.1–3.3, pp. 3–5"
+  S8: "Appendix A.3, p. 21; Figure 11, p. 22"
 relationships:
   - paper: arxiv-2406.12045
     type: contrasts_with
@@ -168,6 +169,28 @@ The paper describes an **89-task** suite, but Table 2's caption says its token c
 
 The authors selected 89 tasks from 229 contributions. They looked for specificity (tests match the requested outcomes), solvability (an oracle passes), and integrity (undeserved passes should be hard). Automated checks included requiring the oracle to pass and a no-op to fail. Human review and inspection of trial traces supplemented those checks; they do not prove that every acceptable end state is recognized. [S1] [S2] [S5]
 
+### Evaluation size and scoring
+
+The paper reports **89 unique tasks** selected from 229 submissions by 93 contributors, and **32,155 trials** across supported model–scaffold pairs. A trial is one attempt at one task, not a new task. The benchmark was run at least five times per supported pair. The task's verifier checks the final state and gives each trial a pass or fail. For the Terminus 2 task-level results, the authors average repeated attempts at the same task with the same model: three passes in five attempts would give that task a 60% resolution rate for that pair. [S1] [S2] [S3] [S8]
+
+The paper gives two different model counts: §3 says 16 models across six scaffolds, while Table 2 lists 21 distinct model names across 55 reported model–scaffold pairs. [S3]
+
+### Domain coverage is not domain-level scoring
+
+Task authors assigned one high-level category to each task. Figure 4 counts tasks, not successful trials. Its 16 categories sum to 89 tasks, but coverage is uneven: software engineering accounts for 26 of 89 tasks (about 29%), and five categories have one task each. [S2]
+
+| Tasks per category | Contributor-assigned categories |
+| --- | --- |
+| 26 | Software Engineering |
+| 9 | System Administration |
+| 8 each | Data Science, Security, Scientific Computing |
+| 5 each | File Operations, Debugging |
+| 4 each | Data Processing, Model Training, Mathematics |
+| 3 | Machine Learning |
+| 1 each | Games, Video Processing, Data Querying, Optimization, Personal Assistant |
+
+The category describes the work; it does not determine the score. For example, Appendix H labels `cobol-modernization` **Software Engineering**, but the verifier checks for byte-for-byte equivalent output files, not a software engineering rubric. Table 2 reports overall resolution rates by model–scaffold pair, and Figure 11 reports per-task rates by model for Terminus 2. Neither gives aggregate pass rates by domain. A category with one task shows performance on that task, not how well an agent generalizes across the field. [S1] [S2] [S3] [S6] [S8]
+
 ### What a pass does not establish
 
 The paper allowed internet access, which makes the setup more realistic but can introduce changing dependencies and exposure to public solutions. The authors report not seeing agents retrieve oracle solutions in their reviewed trajectories; that observation does not rule out future leakage or training contamination. Use separate checks when reproducibility or uncontaminated evaluation is essential. [S5]
@@ -185,6 +208,7 @@ The verifier supplies an outcome; trajectory analysis helps explain failures. Us
 - S5: §§5–6 (limitations and related work), pp. 10–11
 - S6: Appendix H, cobol-modernization, p. 57
 - S7: τ-bench arXiv:2406.12045v1, §§3.1–3.3, pp. 3–5
+- S8: Appendix A.3, p. 21; Figure 11, p. 22
 
 ## FAQ
 

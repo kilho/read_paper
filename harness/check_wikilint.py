@@ -127,8 +127,8 @@ def validate_page(path):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Validate canonical paper pages and an optional draft.")
-    parser.add_argument("--candidate", type=Path, help="validate a draft outside wiki/papers without publishing it")
+    parser = argparse.ArgumentParser(description="Check wiki page structure and references for canonical pages and an optional draft.")
+    parser.add_argument("--candidate", type=Path, help="check a draft outside wiki/papers without publishing it")
     args = parser.parse_args(argv)
     pages = {}
     failures = []
@@ -162,7 +162,7 @@ def main(argv=None):
     if failures:
         print("\n".join(failures), file=sys.stderr)
         return 1
-    print(f"Validated {len(paths)} canonical page(s)" + (" and one candidate." if args.candidate else "."))
+    print(f"Checked {len(paths)} canonical page(s)" + (" and one candidate." if args.candidate else "."))
     return 0
 
 
