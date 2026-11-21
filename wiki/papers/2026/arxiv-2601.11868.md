@@ -102,6 +102,7 @@ sources:
   S6: "Appendix H, cobol-modernization, p. 57"
   S7: "τ-bench arXiv:2406.12045v1, §§3.1–3.3, pp. 3–5"
   S8: "Appendix A.3, p. 21; Figure 11, p. 22"
+  S9: "Appendix B.1, p. 21 (contributor checklist)"
 relationships:
   - paper: arxiv-2406.12045
     type: contrasts_with
@@ -165,13 +166,11 @@ The paper describes an **89-task** suite, but Table 2's caption says its token c
 
 ## Technical Depth
 
-### How the tasks were checked
+### What was submitted, and what was evaluated?
 
-The authors selected 89 tasks from 229 contributions. They looked for specificity (tests match the requested outcomes), solvability (an oracle passes), and integrity (undeserved passes should be hard). Automated checks included requiring the oracle to pass and a no-op to fail. Human review and inspection of trial traces supplemented those checks; they do not prove that every acceptable end state is recognized. [S1] [S2] [S5]
+A **contributor** is a person who helped create benchmark tasks. A **contribution** or **submission** here is a proposed task sent to the project's GitHub for review, not an answer submitted by an agent. A **task** is one reusable evaluation scenario: an instruction, a starting Docker environment, a time limit, verifier tests, and an example solution. In the paper's count, 93 contributors created 229 proposed tasks; the authors selected 89 for Terminal-Bench 2.0 based on author-estimated difficulty and human quality review. [S1] [S2] [S9]
 
-### Evaluation size and scoring
-
-The paper reports **89 unique tasks** selected from 229 submissions by 93 contributors, and **32,155 trials** across supported model–scaffold pairs. A trial is one attempt at one task, not a new task. The benchmark was run at least five times per supported pair. The task's verifier checks the final state and gives each trial a pass or fail. For the Terminus 2 task-level results, the authors average repeated attempts at the same task with the same model: three passes in five attempts would give that task a 60% resolution rate for that pair. [S1] [S2] [S3] [S8]
+A **trial** is one model–scaffold pair's attempt at one task. The authors report at least five benchmark runs per supported pair and **32,155 trials** in total. For the Terminus 2 task-level results, the resolution rate is the fraction of attempts at that task that pass for a given model: three passes in five attempts would give 60%. [S3] [S8]
 
 The paper gives two different model counts: §3 says 16 models across six scaffolds, while Table 2 lists 21 distinct model names across 55 reported model–scaffold pairs. [S3]
 
@@ -189,15 +188,16 @@ Task authors assigned one high-level category to each task. Figure 4 counts task
 | 3 | Machine Learning |
 | 1 each | Games, Video Processing, Data Querying, Optimization, Personal Assistant |
 
-The category describes the work; it does not determine the score. For example, Appendix H labels `cobol-modernization` **Software Engineering**, but the verifier checks for byte-for-byte equivalent output files, not a software engineering rubric. Table 2 reports overall resolution rates by model–scaffold pair, and Figure 11 reports per-task rates by model for Terminus 2. Neither gives aggregate pass rates by domain. A category with one task shows performance on that task, not how well an agent generalizes across the field. [S1] [S2] [S3] [S6] [S8]
+The category describes the work; it does not determine the score. Table 2 reports overall resolution rates by model–scaffold pair, and Figure 11 reports per-task rates by model for Terminus 2. Neither gives aggregate pass rates by domain. A category with one task shows performance on that task, not how well an agent generalizes across the field. [S2] [S3] [S8]
 
-### What a pass does not establish
+### How ground truth is specified and checked
 
-The paper allowed internet access, which makes the setup more realistic but can introduce changing dependencies and exposure to public solutions. The authors report not seeing agents retrieve oracle solutions in their reviewed trajectories; that observation does not rule out future leakage or training contamination. Use separate checks when reproducibility or uncontaminated evaluation is essential. [S5]
+**Ground truth (GT)** here means what counts as a correct outcome for a task. It is not a single answer label or an official sequence of commands. The task author describes the required outcomes in the instruction and encodes them as executable checks in the **verifier**. The **oracle solution** is a separate, human-written example that produces a state the verifier accepts. Its job is to show that the task is solvable, not to dictate how an agent solves it. [S1] [S2] [S9]
 
-### What trajectory analysis adds
+1. **Check the task before inclusion.** The automated workflow checks that the oracle passes and that a no-op attempt fails. Reviewers check that the tests cover the requested behavior without imposing undisclosed requirements. These checks show that at least one solution works and doing nothing is insufficient; they do not prove that the verifier recognizes every valid outcome. [S2] [S9]
+2. **Check the agent's result after the trial.** The agent gets the instruction and starting container. After it runs, the verifier tests the files, programs, or other state it left behind. The tests can run a program to check its behavior; they do not grade the agent's command history or terminal transcript. [S1] [S2]
 
-The verifier supplies an outcome; trajectory analysis helps explain failures. Using sampled failed Terminus 2 trials, the authors classified failures as execution, coherence, or verification errors. Execution errors dominated for the illustrated Claude Opus 4.5 and GPT-5.2 runs. That observation concerns those sampled failures under Terminus 2, not all agents or all benchmark runs. [S4]
+**How expected outputs are generated in one task:** In `cobol-modernization`, the original GnuCOBOL program generates the reference outputs. The comparison runs it and the agent's Python implementation with the same input and equivalent starting data. It then compares the resulting accounts, books, and transactions files byte for byte. If the books file differs, that check fails even if the other two match. This reference-output comparison is specific to the task; others check required behavior directly, such as whether an asynchronous job runner cleans up jobs when interrupted. [S1] [S2] [S6]
 
 ## Source Locators
 
@@ -209,6 +209,7 @@ The verifier supplies an outcome; trajectory analysis helps explain failures. Us
 - S6: Appendix H, cobol-modernization, p. 57
 - S7: τ-bench arXiv:2406.12045v1, §§3.1–3.3, pp. 3–5
 - S8: Appendix A.3, p. 21; Figure 11, p. 22
+- S9: Appendix B.1, p. 21 (contributor checklist)
 
 ## FAQ
 
