@@ -2,9 +2,9 @@
 
 This is the Phase 2 implementation plan for [Paper Discovery and Prioritization](initial_plan.md#3-paper-discovery-and-prioritization). Start with on-demand searches and a hand-curated reading queue. Discovery recommends what to read; it does not download full texts, ingest papers, or judge whether their claims are correct.
 
-## One skill, four modes
+## One skill, five modes
 
-Add `.github/skills/discover-papers/SKILL.md`. All four modes need the same source lookup, identity resolution, wiki comparison, output, and queue rules. The skill translates a request into an explicit mode, filters, and result count; Python retrieves, deduplicates, ranks or samples, and validates changes. Keep provider quirks in adapters and mode-specific ranking in code, not in separate skills. Split a skill only if a workflow later has a different purpose or approval boundary (e.g., a scheduled watchlist digest).
+Add `.github/skills/discover-papers/SKILL.md`. All modes share source lookup, identity resolution, wiki comparison, output, and queue rules. The skill translates a request into an explicit mode, filters, and result count; Python retrieves, deduplicates, ranks or samples, and validates changes. Keep provider quirks in adapters and mode-specific ranking in code, not in separate skills. Split a skill only if a workflow later has a different purpose or approval boundary (e.g., a scheduled watchlist digest).
 
 | Request | Mode | Candidate pool and order |
 |---|---|---|
@@ -12,30 +12,32 @@ Add `.github/skills/discover-papers/SKILL.md`. All four modes need the same sour
 | “What's trending in retrieval?” | `trending` | Default to papers published in the past 90 days. Rank papers with positive citation gain across two comparable OpenAlex observations at least seven days apart by `(new_count - old_count) / days_between * 30`, a 30-day rate. Missing history is unknown, not zero. If fewer papers qualify than requested, show a separate **recent, not trending** list ordered by publication date. Add community signals later and label them by source. |
 | “What are the most cited papers on retrieval?” | `cited` | Use OpenAlex citation totals within the requested topic and date filters. Report provider, count, and observation date; do not merge counts from different providers. Omit unknown counts from the ranked list, distinguish them from known zeroes, and note the age bias. |
 | “Give me three random papers” | `random` | Sample without replacement from the deduplicated, eligible pool. With no filters, use the configured arXiv categories and the past 12 months. Return the seed, pool size, and pool scope. Repeatability means the same seed **and the same candidate set**, not the same live results. |
+| “What should I read next from this paper's related work or references?” | `related` | Start from the paper the reader names. Prefer works discussed in its Related Work section or used as baselines, then other references relevant to the reader's focus. Use citation counts as context, not as the main ranking signal. |
 
-Require a topic for `topic`; let the other modes take optional topic, field, date, and venue filters. Default to five results. Use bounded queries and disclose provider failures, result caps, and cache age. If a provider fails, return clearly labeled partial results when possible; never relax explicit filters silently. For `random`, sample from the full fetched pool after filtering, not from already-ranked top picks; make clear this is not a uniform draw across all papers.
+Require a topic for `topic` and a seed paper for `related`; support optional topic, field, date, and venue filters where applicable. Default to five results. Use bounded queries and disclose provider failures, result caps, and cache age. If a provider fails, return clearly labeled partial results when possible; never relax explicit filters silently. For `random`, sample from the full fetched pool after filtering, not from already-ranked top picks; make clear this is not a uniform draw across all papers.
+
+**Follow references from a paper already read.** Accept a wiki path, paper ID, title, or URL as the seed. Start with the seed's wiki page and matching local extract. Read its Related Work section, baseline discussion, and bibliography; if the extract is incomplete, check the original or use OpenAlex's outgoing references as a fallback. Resolve candidates to stable IDs and links, exclude the seed, and apply the usual known-paper and queue rules. For each recommendation, say why it is worth reading next and cite where the seed discusses it. If only a bibliography or provider reference is verified, label it as such; do not infer a comparison or confuse references the seed cites with later papers that cite the seed.
 
 **Modes are how papers are found; tracks are why they belong on the reading list.** Keep one queue with optional `must-read`, `state-of-the-art`, or `emerging` labels (the three tracks from the initial plan). A `cited` result isn't automatically `must-read`, and a `topic` result isn't state of the art without supporting evidence. Leave the track unset if it is unclear.
 
 ## Source catalog and storage
 
-Put the “where to find or download” catalog in `discovery/resources/`, not `sources/`. The latter is already a [Git-ignored cache of originals and extracts](../README.md#L8), populated by [ingest-paper](../.github/skills/ingest-paper/SKILL.md#L10-L12) after selection.
+Maintain [the resource catalog](../discovery/resources/resource_list.md) in `discovery/resources/`, not `sources/`. The latter is already a [Git-ignored cache of originals and extracts](../README.md#L8), populated by [ingest-paper](../.github/skills/ingest-paper/SKILL.md#L10-L12) after selection. Add each useful site once under its primary purpose: preprints and full text, citations and references, official proceedings, community trends, tutorials, or blogs and research commentary. Note other capabilities in the same entry.
 
 | Path | Purpose |
 |---|---|
-| `discovery/resources/README.md` | Human reference: source coverage, supported signals, official docs, open full-text routes, access limitations, and date last checked. |
-| `discovery/resources/providers.yaml` | Machine config: provider IDs, capabilities, enabled flags, endpoint or feed URL, and request budget. Credentials stay in environment variables; never commit them. |
+| `discovery/resources/resource_list.md` | Human-maintained catalog of websites, what each is useful for, access routes, and whether it is an adapter candidate or a manual reference. |
+| `discovery/resources/providers.yaml` | Runtime config for implemented adapters only: provider IDs, capabilities, enabled flags, endpoints or feeds, and request budgets. Match IDs to the catalog; do not make the harness parse Markdown. Keep credentials in environment variables. |
 | `discovery/topics.yaml` | Optional reusable topic aliases and arXiv categories for default searches. Independent of wiki `topics` tags. |
 | `discovery/reading-queue.yaml` | Tracked, human-editable to-read list and decisions; not a paper metadata catalog. |
 | `discovery/.cache/` | Git-ignored normalized search responses and provider-scoped citation snapshots with observation dates; no PDFs or credentials. Refresh on demand at first. |
 | `schemas/reading-queue.schema.yaml`, `harness/discover.py`, `tests/test_discovery.py` | Queue contract, command entry point, and offline fixture tests. Add provider modules as needed. |
 
-| Resource | Use and full-text route |
-|---|---|
-| [arXiv API](https://info.arxiv.org/help/api/user-manual.html) | Topic search and recent preprints. Return the abstract page and any PDF link supplied by arXiv. |
-| [OpenAlex API](https://help.openalex.org/api/) | Topic search, publication metadata, DOI, and citation totals. Return an open-access location if supplied; otherwise return the landing page and mark full-text access unknown. |
-| [OpenReview](https://openreview.net/) and [ACL Anthology](https://aclanthology.org/) | Add later for venue-specific results and official paper pages. Take award and presentation labels from the venue's official program or announcement, not from search snippets. |
-| [Hugging Face Daily Papers](https://huggingface.co/papers) and lab or researcher watchlists | Add later for community attention and emerging work. Record the source and what the signal actually measures; it is not a citation or quality score. |
+### Harness adapters by source
+
+Keep `harness/discover.py` as the shared entry point. Build separate adapters behind it from the resources in the catalog, rather than one end-to-end harness per site. Route by the requested capability: arXiv for preprint search and PDF links, OpenAlex for citation counts and outgoing references, ACL Anthology and CVF Open Access for venue/year proceedings and PDF links, and Hugging Face Daily or Trending Papers for community attention. Add OpenReview when public venue data is needed. Take award and presentation labels from official venue programs or announcements. Tutorials and blogs stay manual-first: they can point to papers or help explain them, but should not enter citation rankings or substitute for the original paper.
+
+Before enabling an adapter, check the documented access route, terms, and limits. Normalize results to the shared candidate format with provider ID, source URL, and any metric's type and observation date. Preserve the difference between a paper's landing page, an open PDF, and a commentary link. Verify each adapter with an offline fixture and an opt-in live smoke check; listing a site in the catalog does not enable it.
 
 ## From search results to the wiki
 
@@ -52,6 +54,7 @@ Each queue entry stores `id`, `title`, `url`, `added_on`, `status`, `priority`, 
 1. **First usable slice: topic search and queue.** Build the source catalog, arXiv adapter, normalized candidate shape, wiki/queue lookup, search output, and explicit add/list/status commands. Test a search with a duplicate arXiv version, a paper already in the wiki, and a selected paper added twice. The second add must preserve hand-edited priority and notes. A search alone must not change any tracked files.
 2. **Add OpenAlex, `cited`, and `random`.** Test linked DOI/arXiv duplicates versus title-only similarities, known zero versus missing citations, and a repeatable random draw from the same fixture pool. Verify an unavailable provider leaves a visible warning and does not erase queue data.
 3. **Add `trending` and useful wiki comparisons.** Cache citation observations on searches or explicit refreshes. Test two dated observations, insufficient history, an older paper outside the window, and a large total with slower recent growth. Check that the recent fallback is never labeled trending. Test that a topical result can point to what a nearby wiki entry does not cover without marking a user as having read it.
-4. **Expand only after the on-demand flow works.** Add venue/award adapters, watchlists, community feeds, and optional scheduled refresh in that order as needed. Keep refresh read-only with respect to the queue unless the user opts into a separate workflow.
+4. **Add `related` discovery.** Test a seed whose extract discusses a baseline and lists another work only in its bibliography. Verify that the baseline appears first and cites its discussion, the other reference is labeled correctly, and the seed itself is excluded. Test an incomplete extract with provider fallback and verify the result distinguishes an outgoing reference from a later citing paper.
+5. **Expand only after the on-demand flow works.** Add venue/award adapters, watchlists, community feeds, and optional scheduled refresh in that order as needed. Keep refresh read-only with respect to the queue unless the user opts into a separate workflow.
 
-Use offline provider fixtures for ranking and queue tests; make one opt-in live smoke check per enabled adapter. MVP acceptance: ask for a topic, get a short, explained list with source links, save one paper, and see it in the to-read list without creating or changing a wiki page. Phase 2 acceptance adds all four modes and the wiki comparison described above.
+Use offline provider fixtures for ranking and queue tests; make one opt-in live smoke check per enabled adapter. MVP acceptance: ask for a topic, get a short, explained list with source links, save one paper, and see it in the to-read list without creating or changing a wiki page. Phase 2 acceptance covers all five modes and the wiki comparison described above.
