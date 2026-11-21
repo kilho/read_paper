@@ -9,6 +9,7 @@ import uuid
 import yaml
 
 from harness import check_wikilint as wiki
+from harness.search_related import title_key
 
 
 PROMPTS = wiki.ROOT / ".github" / "skills" / "ingest-paper-batch" / "prompts"
@@ -71,7 +72,18 @@ def run_session(command, phase, label, data):
     return result.stdout.splitlines()
 
 
-def run_batch(args, command):
+def existing_paper(reference, pages):
+    paper_id = reference_id(reference)
+    matches = [meta["id"] for path, meta in pages if (
+        paper_id == meta["id"] or reference in {str(path), meta["source"]["url"]}
+        or title_key(reference) == title_key(meta["title"])
+    )]
+    if len(matches) > 1:
+        raise ValueError(f"ambiguous wiki match for {reference}; use a canonical paper ID")
+    return matches[0] if matches else None
+
+
+def run_batch(args):
     references = unique_references(args.papers)
     compare_with = list(dict.fromkeys(args.compare_with))
     if wiki.main([]):
@@ -79,9 +91,23 @@ def run_batch(args, command):
     for paper_id in compare_with:
         check_indexed(paper_id)
 
+    pages = [(path, wiki.read_page(path)[0]) for path in sorted(wiki.PAPERS.glob("*/*.md"))]
+    existing_ids = {meta["id"] for _, meta in pages}
+    pending = []
+    for reference in references:
+        paper_id = existing_paper(reference, pages)
+        if paper_id:
+            print(f"Skipped existing wiki paper: {paper_id}", flush=True)
+        else:
+            pending.append(reference)
+    if not pending:
+        print("No new papers to ingest; synthesis skipped.", flush=True)
+        return
+
+    command = copilot_command(args)
     completed = {}
     failures = []
-    for reference in references:
+    for reference in pending:
         try:
             output = run_session(command, "ingest", reference, {
                 "paper": reference, "constraints": args.ingest_constraints,
@@ -93,15 +119,21 @@ def run_batch(args, command):
             expected = reference_id(reference)
             if expected and paper_id != expected:
                 raise ValueError(f"reported {paper_id}, expected {expected}")
+            if paper_id in existing_ids:
+                print(f"Skipped existing wiki paper: {paper_id}", flush=True)
+                continue
             check_indexed(paper_id)
             completed[paper_id] = None
         except (ValueError, OSError, yaml.YAMLError) as error:
             failures.append(reference)
             print(f"Blocked: {reference}: {error}", file=sys.stderr, flush=True)
 
-    print("Published or reused: " + (", ".join(completed) or "none"), flush=True)
+    print("Published: " + (", ".join(completed) or "none"), flush=True)
     if failures:
         raise ValueError(f"synthesis skipped; {len(failures)} ingestion(s) blocked")
+    if not completed:
+        print("No new papers to ingest; synthesis skipped.", flush=True)
+        return
     if wiki.main([]):
         raise ValueError("synthesis skipped; wiki validation failed after ingestion")
 
@@ -117,6 +149,21 @@ def run_batch(args, command):
         check_indexed(paper_id)
 
 
+def copilot_command(args):
+    copilot = shutil.which("copilot")
+    if copilot is None:
+        raise ValueError("Copilot CLI was not found on PATH")
+    command = [copilot]
+    if args.model:
+        command.extend(["--model", args.model])
+    for flag, values in (("--allow-tool", args.allow_tool), ("--allow-url", args.allow_url)):
+        if values:
+            command.extend([flag, *values])
+    if args.assisted_approval:
+        command.append("--assisted-approval")
+    return command
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Ingest selected papers in fresh Copilot sessions, then synthesize.")
     parser.add_argument("papers", nargs="+", help="selected paper titles, IDs, URLs, or wiki paths (one per argument)")
@@ -129,18 +176,7 @@ def main(argv=None):
     parser.add_argument("--assisted-approval", action="store_true", help="opt in to Copilot assisted permission review")
     args = parser.parse_args(argv)
     try:
-        copilot = shutil.which("copilot")
-        if copilot is None:
-            raise ValueError("Copilot CLI was not found on PATH")
-        command = [copilot]
-        if args.model:
-            command.extend(["--model", args.model])
-        for flag, values in (("--allow-tool", args.allow_tool), ("--allow-url", args.allow_url)):
-            if values:
-                command.extend([flag, *values])
-        if args.assisted_approval:
-            command.append("--assisted-approval")
-        run_batch(args, command)
+        run_batch(args)
     except (ValueError, OSError, yaml.YAMLError) as error:
         print(f"Batch stopped: {error}", file=sys.stderr)
         return 1
