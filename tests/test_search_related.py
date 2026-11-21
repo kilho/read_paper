@@ -76,6 +76,27 @@ class SearchRelatedTests(unittest.TestCase):
             self.assertIn("unknown OpenAlex citations", saved)
             self.assertIn("[citing-paper](<https://example.org/follow-up>)", saved)
 
+    def test_screened_shortlist_excludes_unscreened_citations_and_awards(self):
+        evidence = [
+            {"paper": "10.1234/baseline", "seed": "W1", "kind": "related-work",
+             "source": "https://example.org/seed", "note": "Section 2 compares the same retrieval task."},
+            {"paper": "W3", "kind": "award", "source": "https://example.org/awards", "note": "Best Paper"},
+            {"paper": "W4", "seed": "W1", "kind": "bibliography",
+             "source": "https://example.org/seed", "note": "Listed in the bibliography."},
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "shortlist.md"
+            evidence_path = Path(tmp) / "evidence.json"
+            evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+            with patch.object(related, "OpenAlex", FixtureOpenAlex), patch.object(related, "wiki_pages", return_value=[]), \
+                    contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                self.assertEqual(related.main(["--output", str(path), "--require-relevance", "--evidence",
+                                               str(evidence_path), "W1"]), 0)
+            saved = path.read_text(encoding="utf-8")
+        self.assertIn("1. [Baseline]", saved)
+        self.assertNotIn("Later citation", saved)
+        self.assertNotIn("Bibliography only", saved)
+
     def test_known_arxiv_version_matches_provider_alias(self):
         provider = FixtureOpenAlex()
         provider.baseline["locations"] = [{"landing_page_url": "https://arxiv.org/abs/2501.12345"}]

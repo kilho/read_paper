@@ -20,6 +20,7 @@ ARXIV = r"(?:\d{4}\.\d{4,5}|[a-z][a-z.-]*/\d{7})"
 BONUSES = {"related-work": 0.30, "baseline": 0.30, "bibliography": 0,
            "citing-paper": 0.30, "award": 0.35, "presentation": 0.20, "author": 0.10, "institution": 0.10}
 CONTEXT = {"related-work", "baseline", "bibliography", "citing-paper"}
+RELEVANCE = CONTEXT - {"bibliography"}
 
 
 def identifier(value):
@@ -146,7 +147,7 @@ def load_evidence(path):
     return rows
 
 
-def discover(client, inputs, pages, evidence, per_seed, include_known=False):
+def discover(client, inputs, pages, evidence, per_seed, include_known=False, *, require_relevance=False):
     warnings = []
 
     def attempt(label, call):
@@ -240,6 +241,8 @@ def discover(client, inputs, pages, evidence, per_seed, include_known=False):
     for keys, works, links, notes in groups:
         if not links or keys & seed_keys or (not include_known and keys & known):
             continue
+        if require_relevance and not any(row["kind"] in RELEVANCE for row in notes):
+            continue
         # Pick one citation record for an aliased work, never add counts together.
         work = max(works, key=lambda w: (citation_count(w), bool(w.get("doi")), w["id"]))
         context = max((BONUSES[row["kind"]] for row in notes if row["kind"] in CONTEXT), default=0)
@@ -261,7 +264,7 @@ def md(text):
     return re.sub(r"([\\`*_{}\[\]<>#!|$])", r"\\\1", " ".join(str(text).split()))
 
 
-def report(seeds, candidates, warnings, checked, limit):
+def report(seeds, candidates, warnings, checked, limit, *, require_relevance=False):
     lines = ["# Related paper shortlist", "", f"OpenAlex checked: {checked.date().isoformat()} (UTC).",
              "", "## Seed papers", ""]
     for work in seeds.values():
@@ -270,6 +273,8 @@ def report(seeds, candidates, warnings, checked, limit):
                   "Citation impact leads the score: log10(1 + OpenAlex citations), plus bounded bonuses for "
                   "verified context, venue recognition, watchlist matches, and links to multiple seeds. "
                   "Unknown counts get no citation points; totals favor older work. These are reading signals, not proof of quality.", ""))
+    if require_relevance:
+        lines.extend(("Only papers with supplied relevance evidence are eligible; a citation or award alone does not qualify.", ""))
     if not candidates:
         lines.extend(("No eligible candidates found in the accessible data.", ""))
     for rank, (score, work, links, notes, known) in enumerate(candidates[:limit], 1):
@@ -303,6 +308,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Rank papers cited by or citing one or more seed papers.")
     parser.add_argument("seeds", nargs="+", help="Wiki path/ID, arXiv or DOI URL, OpenAlex ID, or exact title")
     parser.add_argument("--evidence", type=Path, help="Source-checked JSON annotations from the search-related skill")
+    parser.add_argument("--require-relevance", action="store_true", help="Require related-work, baseline, or citing-paper evidence")
     parser.add_argument("--coverage-note", action="append", default=[], help="Record a source limitation in the saved report")
     parser.add_argument("--limit", type=int, default=15, help="Number of ranked recommendations to show")
     parser.add_argument("--per-seed", type=int, default=40, help="Maximum indexed incoming citations per seed (1–100)")
@@ -313,11 +319,14 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not (1 <= len(args.seeds) <= 10 and 1 <= args.per_seed <= 100 and 1 <= args.limit <= 200):
         parser.error("use 1–10 seeds, --per-seed 1–100 and --limit 1–200")
+    if args.require_relevance and args.evidence is None:
+        parser.error("--require-relevance requires --evidence")
     checked = datetime.now(timezone.utc)
     try:
         seeds, candidates, warnings = discover(OpenAlex(), args.seeds, wiki_pages(), load_evidence(args.evidence),
-                                               args.per_seed, args.include_known)
-        text = report(seeds, candidates, warnings + args.coverage_note, checked, args.limit)
+                                               args.per_seed, args.include_known, require_relevance=args.require_relevance)
+        text = report(seeds, candidates, warnings + args.coverage_note, checked, args.limit,
+                      require_relevance=args.require_relevance)
         if args.preview:
             print(text, end="")
         else:
