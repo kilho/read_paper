@@ -31,3 +31,6 @@ Add papers encountered during reading searches when an official source verifies 
 
 | Paper | Venue and year | Exact label(s) | Official evidence |
 |---|---|---|---|
+| [SWE-bench: Can Language Models Resolve Real-World GitHub Issues?](https://arxiv.org/abs/2310.06770) | ICLR 2024 | Oral | [Official Oral 4A program](https://iclr.cc/virtual/2024/session/15084) |
+| [SWE-Lancer: Can Frontier LLMs Earn $1 Million from Real-World Freelance Software Engineering?](https://arxiv.org/abs/2502.12115) | ICML 2025 | Spotlight Poster | [Official presentation page](https://icml.cc/virtual/2025/poster/43573) |
+| [The Koala Benchmarks for the Shell: Characterization and Implications](https://www.usenix.org/system/files/atc25-lamprou.pdf) | USENIX ATC 2025 | Best Paper | [Official award on the paper page](https://www.usenix.org/conference/atc25/presentation/lamprou) |
