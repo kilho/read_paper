@@ -51,6 +51,10 @@ This is a benchmark, not a new agent algorithm. The agent gets a domain policy a
 
 ## How
 
+![The agent exchanges messages with a simulated user and calls database tools. The scorer checks the final database and required answers.](arxiv-2406.12045.png)
+
+*Original diagram based on [Figure 1a, p. 2](https://arxiv.org/pdf/2406.12045v1#page=2) and §3 [S2]. The conversation and tool calls can vary; the final database and any required answers must both match.*
+
 1. Start with a task's database and a hidden user scenario. Give the agent the policy and available tools, but not the expected state.
 2. Let the agent alternate between user messages and API calls. The user simulator answers from its scenario and conversation history; tools return observations and may change state.
 3. Give the episode a 1 only if the final database matches the target and the user-facing messages include all required outputs; otherwise give it a 0.

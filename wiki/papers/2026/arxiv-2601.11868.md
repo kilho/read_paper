@@ -130,13 +130,21 @@ This is an evaluation benchmark, not an agent algorithm. The agent gets a task i
 
 ## Why
 
-Real terminal work often requires discovering what is installed, reading unfamiliar files, and recovering when an intermediate attempt fails. A benchmark for translating a request into a Bash command or optimizing a shell script measures a narrower slice. Terminal-Bench instead puts the agent in an executable environment with an end goal, then checks the result so different valid approaches can earn credit. [S1] [S5]
+**Why solve this problem?** Real terminal work often requires discovering what is installed, reading unfamiliar files, and recovering when an intermediate attempt fails. A single correct command does not show that an agent can finish the job. [S1] [S5]
+
+**What did prior work do?** Westenfelder et al.'s [LLM-Supported Natural Language to Bash Translation](https://aclanthology.org/2025.naacl-long.555/) tests translating requests into Bash commands. That isolates command generation rather than testing whether an agent can inspect a live environment, act on feedback, and complete a multi-step task. [S5]
+
+**What does Terminal-Bench do differently, and why?** It gives the agent a live container and an end goal, then tests the result rather than prescribing a sequence of commands. That lets different valid approaches earn credit, but writing reliable tests for diverse tasks takes manual review. [S1] [S2] [S5]
 
 ## When
 
 Use it to compare model–scaffold pairs if you build or evaluate agents for work such as migrating a legacy program while preserving its behavior. To study a model change, hold the scaffold and evaluation conditions fixed; to study a scaffold change, hold the model fixed where compatible. Separately test the security requirements, operational constraints, and connectors of your own deployment: benchmark passes show only what the verifier covers under the benchmark conditions. [S1] [S3] [S5]
 
 ## How
+
+![The agent receives an instruction and works in a prepared container. Afterward, tests check the resulting container state and report pass or fail.](arxiv-2601.11868.png)
+
+*Original diagram based on [Figure 2, p. 3](https://arxiv.org/pdf/2601.11868v1#page=3) [S1]. Notice the handoff: the agent changes the container, then separate tests check the outcome. The reference solution demonstrates solvability; the agent does not receive it.*
 
 1. Start a trial with the task's container image and instruction, under its time limit. [S1]
 2. Let the agent inspect and change the environment using its tools. Harbor runs the benchmark; Terminus 2 uses only a headless terminal, but the benchmark does not require every scaffold to do so. [S1] [S3]
