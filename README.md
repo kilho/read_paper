@@ -2,6 +2,7 @@
 
 Browse the [research wiki](wiki/index.md) or try its [five-minute comprehension check](evals/comprehension/arxiv-2406.12045.md).
 Use [ingest-paper](.github/skills/ingest-paper/SKILL.md) with an arXiv, conference, blog, or news URL to add an entry, or with an existing entry to revise it.
+Use [ingest-paper-batch](.github/skills/ingest-paper-batch/SKILL.md) with paper names or a constrained shortlist, for example `/ingest-paper-batch @discovery/related/terminal-bench-2026-11-21.md top 3, skip the seed; compare with Terminal-Bench`. It launches one fresh CLI process per selected paper, then another to update comparisons and links. The runner accepts already selected references: `python3 -m harness.ingest_paper_batch --help`.
 Use [explain-detail](.github/skills/explain-detail/SKILL.md) with an existing entry and an optional focus to add deeper evidence or technical explanation.
 Use [search-related](.github/skills/search-related/SKILL.md) with one or more seed papers to inspect Related Work and save a ranked list of references and citing papers. For a citation-only preview, run `python3 -m harness.search_related --preview arxiv-2406.12045`. Omit `--preview` to save a new report under `discovery/related/`. Set `OPENALEX_API_KEY` if you need a higher OpenAlex request quota.
 Use [improve-skill](.github/skills/improve-skill/SKILL.md) to review the latest commit for reusable workflow improvements.
