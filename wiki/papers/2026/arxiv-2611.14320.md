@@ -46,7 +46,7 @@ The input is a fixed collection of past tasks, action/observation trajectories, 
 
 ## Why
 
-**Why solve this problem?** A run gives the memory compiler one outcome for a sequence of actions. That outcome does not tell the compiler which actions mattered, which were incidental, or when the same advice will apply. A compiler can turn an incidental action from a successful run into a rule, and following that rule can make an agent fail a task it could otherwise solve. Keeping the original run lets the agent inspect the basis of the rule, but does not establish which action caused success. A follow-up experiment could vary the action a lesson recommends while keeping the rest of the task fixed to test whether the lesson holds. [S1] [S2]
+**Why solve this problem?** A run gives the memory compiler one outcome for a sequence of actions. That outcome does not tell the compiler which actions mattered, which were incidental, or when the same advice will apply. In the paper's ALFWorld example, ExpeL learned that an object beside a lit lamp was enough to finish the task. But in the successful source run, the episode ended only after the agent picked up the pencil. On a new task, the agent followed the rule, left the vase on the desk, and failed. The log can expose this mismatch without proving which actions were necessary. A follow-up experiment could vary the action a lesson recommends while keeping the rest of the task fixed to test whether the lesson holds. [S1] [S2]
 
 **What did prior work do?** ExpeL extracts and maintains rules from experiences, while ReasoningBank distills strategies from successes and failures and retrieves them by task similarity. The paper's adapted baselines give the agent extracted guidance without a linked path back to the original trajectory, making it harder to inspect the basis of an individual lesson. [S1] [S3]
 
@@ -83,13 +83,31 @@ The source checks have costs and limits: every insight is initially included in 
 
 ## Evidence
 
+**Evaluation setup.** The paper compares six conditions on eight suites from ALFWorld, ScienceWorld, PlanCraft, AppWorld, and τ3-bench Retail. In each of three trials, memory methods build once from the same no-memory training trajectories and test on the same held-out tasks. The builders and the Pi test agent use DeepSeek-V4-Flash at high reasoning effort. Table 1 averages each suite's native metric (e.g., ALFWorld success rate versus ScienceWorld mean score), then gives each suite equal weight in the overall average. Insights Only is the closest comparison: it gets the identical lessons but neither the source files nor the instruction to consult them. [S3]
+
 **Why measure Gain and Regression separately?** Aggregate performance can improve even when memory breaks some tasks the agent previously solved. The paper groups tasks by the majority outcome across three no-memory trials. Gain measures the with-memory success rate within the baseline-failure group; Regression measures the with-memory failure rate within the baseline-success group. The authors also measure Regression on additional no-memory runs to show how often outcomes flip without memory. [S3]
 
+**Main result.** WikiTrace outscored Insights Only in all eight suites (+3.2 points on average); PlanCraft Unseen rose from 73.0 to 81.3, while ScienceWorld rose from 94.9 to 96.1. Mean Regression was 4.5% for WikiTrace, 6.5% for Insights Only, and 9.7% for the independent no-memory reruns. Mean Gain was 35 percentage points above the rerun baseline for WikiTrace versus 27 for Insights Only. This supports providing the evidence and prompting the agent to consult it together; it does not isolate the effect of the files from the prompt. [S3]
+
 **What went wrong?** In a separate analysis, the authors examined 355 failures with memory on tasks solved in all three no-memory runs. An LLM judge linked 184 of those failures (52%) to a memory item the agent followed. The largest of the four memory-linked categories was a wrong item (70 of 355 failures, about 20%); other cases included valid guidance applied outside its scope or used incorrectly. These are judge-assigned explanations for a selected set of failures, not causal estimates for all runs. [S2]
+
+**What failed runs add.** On PlanCraft and ScienceWorld, both memory variants scored better when built from failures alone than from successes alone, and best when built from both. But with failure-only memory, Regression was 9.3% and 9.4% for Insights Only, versus 7.1% and 8.9% for WikiTrace, respectively. That is a reason to compare how failures are preserved and checked, not just whether they are included. In a separate analysis of three text-world benchmarks, agents opened source files on 44% of hard runs versus 22% of easy runs (difficulty was defined by no-memory success across three trials). The agent chose when to open files, so the comparison does not establish the causal benefit of opening a file on a given task. [S4]
 
 ## Relationships
 
 WikiTrace is evaluated on selected tasks from [AppWorld](../2024/conference-acl-long-850.md), which supplies an interactive simulated app environment and task-level evaluation. WikiTrace changes how the agent reuses past experience; AppWorld is one of the benchmarks used to measure it. [S3]
+
+## Technical Depth
+
+### Build the evidence links
+
+For training run $i$, the compiler maps $(x_i, r_i, s_i)$ to $(c_i, I_i)$: the task $x_i$, recorded trajectory $r_i$, and binary outcome $s_i$ produce one compilation $c_i$ and a set $I_i$ of at most three insights. Success compilations summarize decisions and observations; failure compilations give plausible diagnoses rather than labels for individual actions. Each insight links directly to the compilation and the unchanged turn log. Separate indexes list the contents of each layer. At test time, all insights are in the initial message; the three similar runs supply starting points for investigation, not a filter on which insights the agent receives. The agent can check a summary or jump straight to the log, then revise its plan without rewriting memory. [S2]
+
+### Calculate Gain and Regression
+
+Let $B_i$ be task $i$'s majority outcome over three reference no-memory trials, and $M_{i,t}$ its binary outcome with memory on trial $t$. Within a suite, count each applicable task–trial pair: $\text{Gain} = \Pr(M_{i,t}=1 \mid B_i=0)$ and $\text{Regression} = \Pr(M_{i,t}=0 \mid B_i=1)$. For the no-memory rerun comparison, replace the with-memory outcome with an outcome from one of three additional no-memory trials, leaving $B_i$ fixed. [S3]
+
+**Illustrative example:** Suppose two tasks are baseline failures and eight are baseline successes. Across three memory trials per task, memory solves 3 of 6 attempts in the first group and fails 2 of 24 in the second. Gain is 50% and Regression is 8.3%. Overall, it solves $(3+22)/30 = 83.3\%$, compared with the majority baseline's $8/10 = 80\%$. The average improves even though two attempts on previously solvable tasks now fail. [S3]
 
 ## Source Locators
 
