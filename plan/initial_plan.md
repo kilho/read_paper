@@ -572,12 +572,6 @@ ai-research-wiki/
 │   ├── link.py
 │   └── maintain.py
 │
-├── evals/
-│   ├── comprehension/
-│   ├── factuality/
-│   ├── coverage/
-│   └── regression/
-│
 └── templates/
     ├── paper.md
     ├── concept.md
@@ -604,7 +598,7 @@ Evaluate both the **quality of the wiki** and the **quality of the skills**.
 | Coverage | Preserve essential paper details |
 | Explanation quality | Make methods understandable |
 | Example correctness | Ensure worked examples are valid |
-| Reading efficiency | Support 5–10 minute comprehension |
+| Reading efficiency | Keep core explanations concise |
 | Relationship quality | Identify meaningful connections |
 
 ### Skill evaluation
@@ -616,16 +610,6 @@ Evaluate both the **quality of the wiki** and the **quality of the skills**.
 | Error recurrence | Avoid repeating previously corrected mistakes |
 | Generalization | Improve across different paper types |
 | Cost and latency | Reduce processing overhead |
-
-### Human evaluation
-
-A particularly useful metric is:
-
-**How much time does a researcher need to understand a paper using the wiki, compared with reading the original paper?**
-
-Test this with technical questions requiring explanations, calculations, and comparisons, not merely factual recall.
-
----
 
 ## 11. Updated Implementation Roadmap
 
@@ -713,7 +697,7 @@ Build:
 | Skill updates | Proposed automatically, approved by humans |
 | Knowledge delivery | Progressive disclosure |
 | Storage | Git + Markdown, with derived indexes as needed |
-| Evaluation | Accuracy, comprehension, coverage, efficiency, and regression |
+| Evaluation | Accuracy, coverage, efficiency, and regression |
 
 ---
 
