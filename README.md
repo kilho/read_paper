@@ -52,12 +52,12 @@ Papers already in the wiki are skipped. The runner also accepts already-selected
 
 ### [explain-detail](.github/skills/explain-detail/SKILL.md)
 
-Adds the **Evidence** and **Technical Depth** sections to an existing entry.
+Looks in the introduction and experimental discussion for findings, failure modes, and measurement choices that explain why the work was needed. Adds missing insights to **Why** and expands **Evidence** and **Technical Depth** in the existing entry.
 
 | Call | Effect |
 | --- | --- |
-| `/explain-detail arxiv-2611.14320` | Adds or refines both sections, about a ten-minute technical read. |
-| `/explain-detail arxiv-2611.14320 the regression metric` | Expands only the section that covers the focus, such as a metric, derivation, or ablation. |
+| `/explain-detail arxiv-2611.14320` | Explains why agents can learn misleading lessons from past runs and why the paper measures Gain and Regression separately, alongside the technical reading path. |
+| `/explain-detail arxiv-2611.14320 the regression metric` | Expands only the material relevant to the requested focus. |
 
 ### [improve-skill](.github/skills/improve-skill/SKILL.md)
 

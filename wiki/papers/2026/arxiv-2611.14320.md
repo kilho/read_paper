@@ -46,7 +46,7 @@ The input is a fixed collection of past tasks, action/observation trajectories, 
 
 ## Why
 
-**Why solve this problem?** Agents distill experience into reusable lessons, but a run's success or failure alone does not establish which action caused it. A wrong lesson, or a valid lesson applied in the wrong setting, can make an agent fail a task it could otherwise solve. [S1] [S2]
+**Why solve this problem?** A run gives the memory compiler one outcome for a sequence of actions. That outcome does not tell the compiler which actions mattered, which were incidental, or when the same advice will apply. A compiler can turn an incidental action from a successful run into a rule, and following that rule can make an agent fail a task it could otherwise solve. Keeping the original run lets the agent inspect the basis of the rule, but does not establish which action caused success. A follow-up experiment could vary the action a lesson recommends while keeping the rest of the task fixed to test whether the lesson holds. [S1] [S2]
 
 **What did prior work do?** ExpeL extracts and maintains rules from experiences, while ReasoningBank distills strategies from successes and failures and retrieves them by task similarity. The paper's adapted baselines give the agent extracted guidance without a linked path back to the original trajectory, making it harder to inspect the basis of an individual lesson. [S1] [S3]
 
@@ -80,6 +80,12 @@ The authors compare WikiTrace with no memory, AWM, ExpeL, ReasoningBank, and **I
 - **Report harm as well as help:** Gain and Regression separate newly solved tasks from previously solved tasks that fail; an additional no-memory rerun estimates the variation that can occur without memory. [S3]
 
 The source checks have costs and limits: every insight is initially included in the prompt, so scaling to larger memories requires a retrieval method not tested here. In the reported experiments WikiTrace cost **1.17×** as much per task as Insights Only, averaged across suites, and the qualitative failure labels were made by LLM judges rather than establishing causation. [S4] [S5]
+
+## Evidence
+
+**Why measure Gain and Regression separately?** Aggregate performance can improve even when memory breaks some tasks the agent previously solved. The paper groups tasks by the majority outcome across three no-memory trials. Gain measures the with-memory success rate within the baseline-failure group; Regression measures the with-memory failure rate within the baseline-success group. The authors also measure Regression on additional no-memory runs to show how often outcomes flip without memory. [S3]
+
+**What went wrong?** In a separate analysis, the authors examined 355 failures with memory on tasks solved in all three no-memory runs. An LLM judge linked 184 of those failures (52%) to a memory item the agent followed. The largest of the four memory-linked categories was a wrong item (70 of 355 failures, about 20%); other cases included valid guidance applied outside its scope or used incorrectly. These are judge-assigned explanations for a selected set of failures, not causal estimates for all runs. [S2]
 
 ## Relationships
 
