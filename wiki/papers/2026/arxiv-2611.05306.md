@@ -28,7 +28,12 @@ relationships:
 
 ## Overview
 
-This paper tests whether agents need to keep all available information in the model's active context. It changes what the harness sends to existing models, not the models themselves: summarize a growing conversation into a handoff, or let the agent retrieve just the passages it needs from a large input. Across the tested workloads, these changes usually kept accuracy near or above the full-context baselines; that does not make old evidence dispensable. [S2] [S3] [S4] [S5]
+**Context** is what the AI model can see at one time: the task, previous messages, and results from tools such as a test runner. The paper asks whether giving the model less to read at each step can save computing work without making the model much worse at the task. The researchers changed what they sent to the model, not how the model was trained. [S1] [S2]
+
+- **When the work takes many steps:** Imagine an AI coding assistant fixing a bug. Instead of passing every earlier command and test result into the next conversation, the assistant writes a short note: “I changed the date parser. The time-zone test still fails. Check how the parser handles UTC next.” The next conversation starts with the original task and that note. The paper calls replacing the old messages with a short note **compaction**. [S2] [S3]
+- **When the source material is long:** Imagine the same assistant needs to check a large API manual. Rather than putting the whole manual into the conversation, the researchers' setup leaves the manual in a file. The assistant searches the file and reads the relevant pages or passages as needed. [S2] [S4]
+
+On the tasks the researchers tested, the models usually did about as well as when given the full history or the full documents. **Old information can still matter.** If the note leaves out the exact error message, the assistant may need to look up that message in a saved log. The point is to avoid showing the model everything at once, not to throw away the original information. [S3] [S4] [S5]
 
 ## What
 
@@ -40,8 +45,8 @@ The study starts with either a task that generates a long sequence of tool actio
 | --- | --- | --- |
 | Peak live context | The length of the largest conversation segment during a task, not the sum of all segments. [S2] | A short peak does not imply few tokens spent across the whole run. |
 | Full-history accumulation (FHA) | Append each action and observation to one conversation without replacing old messages. [S2] | This is the long-horizon baseline, distinct from giving a long document up front in the long-input experiments. |
-| End-of-conversation compaction (EoCC) | At a threshold, generate a task handoff and resume in a fresh conversation. The higher total limit leaves room for the handoff. [S2] | The summary replaces prior turns in active context; it need not preserve every exact fact. |
-| Single-action compaction (SAC) | Update the textual handoff after each environment action and start a fresh conversation for the next action. [S2] | One action per conversation is not one action per task. |
+| End-of-conversation compaction (EoCC) | When the conversation reaches a set length, write a short progress note and start a new conversation with the original task and the note. [S2] | The new conversation doesn't contain all the old messages. The note can leave out details. |
+| Single-action compaction (SAC) | After each tool action and its result, update the progress note and start a new conversation. [S2] | The same task can still take many actions. |
 | Selective input reading | Leave documents in files and let the agent choose which passages to load using search and bounded reads. [S2] [S4] | Large source inputs can remain available without all of their tokens entering the model. |
 
 ## Why
@@ -50,7 +55,7 @@ The study starts with either a task that generates a long sequence of tool actio
 
 **What did prior work do?** The released mini-swe-agent uses a minimal ReAct loop: take an action, observe the result, and append both to the conversation. This preserves all previous observations, but the default loop does not bound the growing history. Likewise, the standard full-input baselines place the entire benchmark input in context. [S2] [S4]
 
-**What does this paper do differently, and why?** It keeps the action loop but replaces accumulated messages with a brief aimed at the work still to do. For long documents it changes the input interface too, so the agent can retrieve exact passages instead of carrying the whole source. A handoff can lose exact details, and retrieval helps only if the underlying material remains available and the agent can find it. [S2] [S3] [S4]
+**What does this paper do differently, and why?** The agent still takes actions and checks the results, but it can start a new conversation with a progress note instead of keeping every old message in view. For long documents, the agent reads specific passages from files instead of receiving all the text up front. If the note leaves out an important detail, the agent needs another way to find the original. [S2] [S3] [S4]
 
 ## When
 
@@ -61,7 +66,7 @@ Those scores measure task success, not whether the agent can recall arbitrary de
 ## How
 
 1. **Keep the action loop.** Give the model the task. It takes an action, sees the result, and uses that observation to choose what to do next. Full history leaves those turns in one conversation. [S2]
-2. **Replace history with a handoff.** When EoCC crosses its threshold, ask the model for a bounded brief with the objective, established facts, relevant artifacts and next steps. Restart with the same system instructions, the original task and the brief. SAC instead does the update after every action and observation. [S2] [S3]
+2. **Start a new conversation with a progress note.** With EoCC, once the conversation reaches a set length, ask the model to write a short note about what it found, what it changed, and what to do next. Start the new conversation with the same instructions, the original task, and the note. With SAC, write that note after every tool action and its result. [S2] [S3]
 3. **Keep large source inputs outside the prompt.** For long-input benchmarks, give the agent the question and file information. It searches and reads bounded passages, and uses EoCC if that working conversation grows too large. [S2] [S4]
 4. **Compare outcomes and token use separately.** Sparse reads and shorter conversations change both what evidence the agent sees and what inference consumes. The authors report benchmark scores and token accounting; their optimized retail cost adds a context-dependent pricing assumption. [S3] [S4] [S6]
 
@@ -77,7 +82,7 @@ Those scores measure task success, not whether the agent can recall arbitrary de
 
 - **Short context is not short total work.** Compaction can require the agent to read or do something again. Peak context, total tokens and task accuracy should be tracked independently. [S2] [S3]
 - **Optimized cost is not the API bill.** On LongBench v2, GPT 5.6 Sol went from 70.8% to 72.6% with selective reading and compaction (16K limit, 12K threshold). The estimated optimized cost fell from $79.20 to $18.04, but the same run's nominal cost at standard rates rose to $90.20. The estimate extrapolates from throughput measurements of three open-weight models; it is not a measured discount for the tested closed-weight endpoint or an isolated effect of compaction. [S4] [S6]
-- **SAC is demonstrated; a purpose-trained model is proposed.** Section 5 runs existing models with a textual handoff. Section 5.1 proposes post-training a *semantic state space model* to carry out that handoff natively; the SAC results do not evaluate such a model. [S5]
+- **The authors tested a progress note, not a new model.** Section 5 tests existing models that write a note after each action. Section 5.1 proposes training a model specifically to read and update those notes, which the authors call a *semantic state space model*. The paper does not test that proposed model. [S5]
 
 ## Relationships
 
@@ -94,3 +99,7 @@ Those scores measure task success, not whether the agent can recall arbitrary de
 - S6: Appendix B, Equations 1–4, pp. 20–21
 
 ## FAQ
+
+### Can the agent recover a detail left out of the progress note?
+
+Not from the note alone. The paper suggests saving the full conversation separately and letting the agent search it. That way, the note tells the agent where to pick up the task, and the saved record can supply the exact earlier message when needed. [S2] [S3]
