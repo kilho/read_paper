@@ -11,7 +11,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode, urlsplit
 from urllib.request import Request, urlopen
 
-from harness.check_wikilint import PAPERS, ROOT, read_page
+from harness.check_wikilint import PAPERS, ROOT, paper_paths, read_page
 
 
 API = "https://api.openalex.org/works"
@@ -100,7 +100,7 @@ class OpenAlex:
 
 
 def wiki_pages():
-    return [(path, read_page(path)[0]) for path in sorted(PAPERS.glob("*/*.md"))]
+    return [(path, read_page(path)[0]) for path in paper_paths()]
 
 
 def resolve_seed(value, client, pages):

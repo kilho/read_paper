@@ -1,0 +1,54 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+description: >-
+  Algorithm walkthrough page, stored at wiki/papers/<year>/<paper>_algorithm.md.
+  It complements the canonical paper page and does not replace it.
+type: object
+additionalProperties: false
+required: [schema_version, kind, paper, title, year, source, sources]
+properties:
+  schema_version:
+    const: 1
+  kind:
+    const: algorithm
+  paper:
+    type: string
+    description: ID of the companion canonical paper page; it must exist with the same title, year, and source URL.
+    pattern: '^(arxiv-[0-9]{4}\.[0-9]{4,5}|(conference|blog|news|web)-[a-z0-9]+(-[a-z0-9]+)*)$'
+  title:
+    type: string
+    pattern: '\S'
+  year:
+    type: integer
+    minimum: 1991
+  source:
+    type: object
+    additionalProperties: false
+    required: [url]
+    properties:
+      version:
+        type: string
+        pattern: '\S'
+      url:
+        type: string
+        pattern: '^https?://[^\s]+$'
+  sources:
+    type: object
+    minProperties: 1
+    propertyNames:
+      pattern: '^S[1-9][0-9]*$'
+    additionalProperties:
+      type: string
+      pattern: '\S'
+x-page:
+  headings: [Core Idea, Input Contract, Phase Walkthrough, Phase Comparison, Key Distinctions, Takeaway, Source Locators]
+  cited_headings: [Core Idea, Input Contract, Phase Walkthrough, Phase Comparison, Key Distinctions]
+  min_phases: 2
+  phase_table_first_column: Aspect
+  example_types: [Paper example, Derived example, Illustrative example]
+  guidance:
+    Core Idea: Contrast what the conventional approach learns and when it computes with the paper's approach, then correct the most likely misreading ("This is X, not Y").
+    Input Contract: Show one concrete instance of the actual inputs and outputs, state what is and is not used (names, label text, positions, IDs), and how inputs become tokens or states.
+    Phase Walkthrough: One H3 per phase. Carry a labeled toy example through each phase with inputs, intermediate values, outputs, hidden information, and parameter changes; put "Paper actually" notes next to any simplification.
+    Phase Comparison: A Markdown table whose first column is Aspect and whose other columns are phases, with rows such as data, labels, gradient updates, parameters, and objective.
+    Key Distinctions: A one-line formula contrast of what is conditioned on, plus subtle points about what the method does not recover or output.
+    Takeaway: The reusable research pattern in 3–4 steps; label reader-specific connections as implications.

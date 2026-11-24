@@ -10,6 +10,9 @@ from harness import check_wikilint
 
 
 PAGE = check_wikilint.PAPERS / "2024" / "arxiv-2406.12045.md"
+ALGORITHM_EXAMPLE = (
+    check_wikilint.ROOT / ".github" / "skills" / "ingest-paper-algorithm" / "examples" / "arxiv-2207.01848_algorithm.md"
+)
 
 
 class ValidationTests(unittest.TestCase):
@@ -142,6 +145,57 @@ class ValidationTests(unittest.TestCase):
         self.draft.write_text(empty_faq + question + " [S99]\n", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "unknown source IDs: S99"):
             check_wikilint.validate_page(self.draft)
+
+
+
+class AlgorithmPageTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.draft = Path(directory.name) / "draft.md"
+        self.text = ALGORITHM_EXAMPLE.read_text(encoding="utf-8")
+
+    def run_candidate(self, text):
+        self.draft.write_text(text, encoding="utf-8")
+        stderr = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(stderr):
+            code = check_wikilint.main(["--candidate", str(self.draft)])
+        return code, stderr.getvalue()
+
+    def test_example_is_a_valid_candidate_for_its_companion_paper(self):
+        self.assertEqual(self.run_candidate(self.text), (0, ""))
+
+    def test_requires_matching_companion_paper(self):
+        for old, new, error in (
+            ("paper: arxiv-2207.01848", "paper: arxiv-2207.01849", "companion paper page not found"),
+            ("year: 2023", "year: 2022", "must match companion paper arxiv-2207.01848: year"),
+        ):
+            with self.subTest(error=error):
+                code, stderr = self.run_candidate(self.text.replace(old, new))
+                self.assertEqual(code, 1)
+                self.assertIn(error, stderr)
+
+    def test_requires_phases_example_label_and_comparison_table(self):
+        walkthrough = self.text.replace("### Phase 2", "#### Phase 2").replace("### Phase 3", "#### Phase 3")
+        walkthrough = walkthrough.replace("**Illustrative example:**", "Example:")
+        table = self.text.replace("| Aspect |", "| Row |")
+        for text, error in (
+            (walkthrough, "at least 2 H3 phases.*recognized example label"),
+            (table, "Phase Comparison must be a Markdown table"),
+        ):
+            with self.subTest(error=error):
+                self.draft.write_text(text, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, error):
+                    check_wikilint.validate_algorithm_page(self.draft)
+
+    def test_paper_paths_exclude_algorithm_pages(self):
+        with tempfile.TemporaryDirectory() as directory:
+            papers = Path(directory)
+            (papers / "2023").mkdir()
+            for name in ("arxiv-2207.01848.md", "arxiv-2207.01848_algorithm.md"):
+                (papers / "2023" / name).write_text("", encoding="utf-8")
+            with patch.object(check_wikilint, "PAPERS", papers):
+                self.assertEqual([path.name for path in check_wikilint.paper_paths()], ["arxiv-2207.01848.md"])
 
 
 if __name__ == "__main__":

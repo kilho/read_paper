@@ -91,7 +91,7 @@ def run_batch(args):
     for paper_id in compare_with:
         check_indexed(paper_id)
 
-    pages = [(path, wiki.read_page(path)[0]) for path in sorted(wiki.PAPERS.glob("*/*.md"))]
+    pages = [(path, wiki.read_page(path)[0]) for path in wiki.paper_paths()]
     existing_ids = {meta["id"] for _, meta in pages}
     pending = []
     for reference in references:

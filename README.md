@@ -24,6 +24,15 @@ Turns an arXiv, conference, blog, or news source into a source-verified wiki pag
 | `/ingest-paper arxiv-2404.07972 fix the worked example to use Figure 3` | Revises only what you asked and keeps the rest of the page. |
 | `/ingest-paper <url> draft only` | Shows the draft without publishing it. |
 
+### [ingest-paper-algorithm](.github/skills/ingest-paper-algorithm/SKILL.md)
+
+Complements `ingest-paper` for method papers with distinct phases, such as data generation, pretraining, and inference. It requires the paper's canonical page to exist and leaves that page unchanged. It writes a companion page, `wiki/papers/<year>/<id>_algorithm.md`, using the [algorithm schema](schemas/algorithm.schema.yaml). The page states the input contract, traces labeled toy examples through every phase, and ends with a phase-comparison table. Its [TabPFN example](.github/skills/ingest-paper-algorithm/examples/arxiv-2207.01848_algorithm.md) is the target style.
+
+| Call | Effect |
+| --- | --- |
+| `/ingest-paper-algorithm arxiv-2207.01848` | Writes `wiki/papers/2023/arxiv-2207.01848_algorithm.md` and links it under the paper in `wiki/index.md`. |
+| `/ingest-paper-algorithm <id> draft only` | Shows the validated draft without publishing it. |
+
 ### [search-related](.github/skills/search-related/SKILL.md)
 
 Reads a seed's Related Work, screens papers that cite it, and saves a ranked shortlist under `discovery/related/`.

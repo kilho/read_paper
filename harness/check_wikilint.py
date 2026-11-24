@@ -12,6 +12,17 @@ ROOT = Path(__file__).resolve().parents[1]
 PAPERS = ROOT / "wiki" / "papers"
 SCHEMA = yaml.safe_load((ROOT / "schemas" / "paper.schema.yaml").read_text(encoding="utf-8"))
 VALIDATOR = Draft202012Validator(SCHEMA)
+ALGORITHM_SCHEMA = yaml.safe_load((ROOT / "schemas" / "algorithm.schema.yaml").read_text(encoding="utf-8"))
+ALGORITHM_VALIDATOR = Draft202012Validator(ALGORITHM_SCHEMA)
+ALGORITHM_SUFFIX = "_algorithm"
+
+
+def is_algorithm_path(path):
+    return path.stem.endswith(ALGORITHM_SUFFIX)
+
+
+def paper_paths(pattern="*/*.md"):
+    return sorted(path for path in PAPERS.glob(pattern) if not is_algorithm_path(path))
 
 
 def read_page(path):
@@ -42,6 +53,82 @@ def has_terminology_table(content, columns):
         and all(re.fullmatch(r":?-{3,}:?", cell) for cell in separator)
         and all(len(row) == len(columns) and all(row) for row in map(table_cells, lines[2:]))
     )
+
+
+def split_sections(body):
+    parts = re.split(r"^## (.+)$", body, flags=re.M)
+    return parts, parts[1::2], dict(zip(parts[1::2], parts[2::2]))
+
+
+def has_table(content, first_column, min_rows=1):
+    lines = [line for line in content.splitlines() if line.strip().startswith("|")]
+    if len(lines) < 2 + min_rows:
+        return False
+    header = table_cells(lines[0])
+    separator = table_cells(lines[1])
+    rows = [table_cells(line) for line in lines[2:]]
+    return (
+        len(header) >= 3
+        and header[0] == first_column
+        and len(separator) == len(header)
+        and all(re.fullmatch(r":?-{3,}:?", cell) for cell in separator)
+        and all(len(row) == len(header) and all(row) for row in rows)
+    )
+
+
+def validate_algorithm_page(path):
+    metadata, body = read_page(path)
+    errors = [
+        f"{error.json_path}: {error.message}"
+        for error in ALGORITHM_VALIDATOR.iter_errors(metadata)
+    ]
+    if errors:
+        raise ValueError("; ".join(errors))
+    if re.findall(r"^# (.+)$", body, re.M) != [metadata["title"]]:
+        errors.append("expected one H1 matching the frontmatter title")
+    parts, headings, sections = split_sections(body)
+    rules = ALGORITHM_SCHEMA["x-page"]
+    if headings != rules["headings"]:
+        errors.append("expected these H2 sections in order: " + ", ".join(rules["headings"]))
+    errors.extend(f"empty section: {name}" for name, content in sections.items() if not content.strip())
+    walkthrough = sections.get("Phase Walkthrough", "")
+    if len(re.findall(r"^### \S", walkthrough, re.M)) < rules["min_phases"]:
+        errors.append(f"Phase Walkthrough must have at least {rules['min_phases']} H3 phases")
+    if not any(f"**{label}:**" in walkthrough for label in rules["example_types"]):
+        errors.append("Phase Walkthrough must include a recognized example label")
+    if not has_table(sections.get("Phase Comparison", ""), rules["phase_table_first_column"]):
+        errors.append(
+            f"Phase Comparison must be a Markdown table with a '{rules['phase_table_first_column']}' "
+            "column, at least two phase columns, and complete rows"
+        )
+    citable_text = "\n".join([parts[0], *(content for name, content in sections.items() if name != "Source Locators")])
+    unknown = set(re.findall(r"\[(S[0-9]+)\]", citable_text)) - metadata["sources"].keys()
+    if unknown:
+        errors.append("unknown source IDs: " + ", ".join(sorted(unknown)))
+    errors.extend(
+        f"{name} must cite a source ID"
+        for name in rules["cited_headings"]
+        if name in sections and not re.search(r"\[S[0-9]+\]", sections[name])
+    )
+    expected_locators = {f"- {key}: {value}" for key, value in metadata["sources"].items()}
+    if expected_locators != set(sections.get("Source Locators", "").strip().splitlines()):
+        errors.append("Source Locators must list each frontmatter source as '- ID: locator'")
+    if errors:
+        raise ValueError("; ".join(errors))
+    return metadata
+
+
+def check_companion(path, metadata, pages):
+    companion = pages.get(metadata["paper"])
+    if not companion:
+        return f"{path}: companion paper page not found: {metadata['paper']}"
+    paper = companion[1]
+    mismatched = [key for key in ("title", "year") if metadata[key] != paper[key]]
+    if metadata["source"]["url"] != paper["source"]["url"]:
+        mismatched.append("source URL")
+    if mismatched:
+        return f"{path}: must match companion paper {metadata['paper']}: " + ", ".join(mismatched)
+    return None
 
 
 def validate_page(path):
@@ -75,9 +162,7 @@ def validate_page(path):
     if re.findall(r"^# (.+)$", body, re.M) != [metadata["title"]]:
         errors.append("expected one H1 matching the frontmatter title")
 
-    parts = re.split(r"^## (.+)$", body, flags=re.M)
-    headings = parts[1::2]
-    sections = dict(zip(headings, parts[2::2]))
+    parts, headings, sections = split_sections(body)
     rules = SCHEMA["x-page"]
     optional = set(rules["optional_headings"])
     expected_headings = [
@@ -131,12 +216,19 @@ def main(argv=None):
     parser.add_argument("--candidate", type=Path, help="check a draft outside wiki/papers without publishing it")
     args = parser.parse_args(argv)
     pages = {}
+    algorithms = []
     failures = []
     paths = sorted(PAPERS.rglob("*.md"))
     if not paths and not args.candidate:
         failures.append("No canonical paper pages found.")
     for path in paths:
         try:
+            if is_algorithm_path(path):
+                metadata = validate_algorithm_page(path)
+                if path != PAPERS / str(metadata["year"]) / f"{metadata['paper']}{ALGORITHM_SUFFIX}.md":
+                    raise ValueError("canonical path must be wiki/papers/<year>/<paper>_algorithm.md")
+                algorithms.append((path, metadata))
+                continue
             metadata = validate_page(path)
             paper_id = metadata["id"]
             if paper_id in pages:
@@ -150,15 +242,21 @@ def main(argv=None):
         try:
             if args.candidate.resolve().is_relative_to(PAPERS):
                 raise ValueError("candidate must be outside wiki/papers")
-            metadata = validate_page(args.candidate)
-            pages[metadata["id"]] = (args.candidate, metadata)
-        except (ValueError, OSError, yaml.YAMLError) as error:
+            if read_page(args.candidate)[0].get("kind") == "algorithm":
+                metadata = validate_algorithm_page(args.candidate)
+                algorithms = [item for item in algorithms if item[1]["paper"] != metadata["paper"]]
+                algorithms.append((args.candidate, metadata))
+            else:
+                metadata = validate_page(args.candidate)
+                pages[metadata["id"]] = (args.candidate, metadata)
+        except (ValueError, OSError, yaml.YAMLError, AttributeError) as error:
             failures.append(f"{args.candidate}: {error}")
     for path, metadata in pages.values():
         for relationship in metadata.get("relationships", []):
             target = relationship["paper"]
             if target == metadata["id"] or target not in pages:
                 failures.append(f"{path}: invalid relationship target: {target}")
+    failures.extend(filter(None, (check_companion(path, metadata, pages) for path, metadata in algorithms)))
     if failures:
         print("\n".join(failures), file=sys.stderr)
         return 1
