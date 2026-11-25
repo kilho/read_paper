@@ -24,7 +24,7 @@ relationships:
 
 ## Overview
 
-WikiTrace is an evidence-linked memory system for agents, not a way to guarantee that stored lessons are correct. It turns past task runs into concise lessons linked to their source summaries and raw trajectories, allowing an agent to check a lesson while solving a new task. [S1] [S2]
+WikiTrace is an evidence-linked memory system for large language model (LLM) agents, not a way to guarantee that stored lessons are correct. It turns past task runs into concise lessons linked to their source summaries and raw trajectories, allowing an agent to check a lesson while solving a new task. [S1] [S2]
 
 ## What
 
@@ -33,6 +33,8 @@ The input is a fixed collection of past tasks, action/observation trajectories, 
 ![WikiTrace compiles trajectories into linked insights and summaries; an agent consults source evidence when a lesson is incomplete, conflicting, or from a failed run.](arxiv-2611.14320.png)
 
 *Paper [Figure 2, p. 3](https://arxiv.org/pdf/2611.14320v1#page=3): “Overview of WikiTrace. (a) A compiler turns each past run into a compilation, a diagnosis of why the run succeeded or failed, and insights, each a concise lesson. All layers stay linked. (b) Each layer's documents follow a fixed template. (c) The agent starts from every insight and descends through the links under the conditions shown.” Notice that source access is selective rather than automatic verification. [S2]*
+
+*Figure and caption by Lee et al., licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); the figure is cropped.*
 
 ## Terminology
 
@@ -69,8 +71,8 @@ The authors compare WikiTrace with no memory, AWM, ExpeL, ReasoningBank, and **I
 
 **Paper example:** In PlanCraft, the agent must craft acacia slabs. A lesson from a failed run suggests giving up if placing one plank already appears to produce another item; a conflicting lesson from a successful run says to keep adding the ingredients because the displayed output is only a preview. [S5]
 
-1. WikiTrace opens the linked runs. The failed run repeatedly removed the plank from the grid; the successful run kept adding planks until the desired slab appeared.
-2. The agent recognizes that the intermediate button or pressure plate is a preview, not an item automatically consumed from the grid. It keeps placing the three required planks and takes the resulting six slabs.
+1. WikiTrace opens the linked runs. In the failed acacia-slab run, the agent repeatedly placed a plank in the grid and took it back. In the successful crimson-slab run, the agent kept adding crimson planks until a slab appeared. The successful run suggests a procedure for acacia, but does not itself verify the acacia recipe. [S5]
+2. The agent recognizes that the intermediate button or pressure plate is a preview, not an item automatically consumed from the grid. On the acacia task, it places three acacia planks in a row and takes the resulting six acacia slabs. [S5]
 3. In the paper's illustrated run, WikiTrace succeeds. The Insights Only agent instead takes the intermediate button, consumes a plank, and declares the task impossible. This is one qualitative example, not a measured success rate or a permanent repair to the stored rule. [S5]
 
 ## Differentiators

@@ -138,13 +138,15 @@ This is an evaluation benchmark, not an agent algorithm. The agent gets a task i
 
 ## When
 
-Use it to compare model–scaffold pairs if you build or evaluate agents for work such as migrating a legacy program while preserving its behavior. To study a model change, hold the scaffold and evaluation conditions fixed; to study a scaffold change, hold the model fixed where compatible. Separately test the security requirements, operational constraints, and connectors of your own deployment: benchmark passes show only what the verifier covers under the benchmark conditions. [S1] [S3] [S5]
+Use Terminal-Bench to compare model–scaffold pairs if you build or evaluate agents for work such as migrating a legacy program while preserving its behavior. A benchmark score summarizes success across its tasks; it does not by itself verify a particular migration. To study a model change, hold the scaffold and evaluation conditions fixed; to study a scaffold change, hold the model fixed where compatible. Separately test your deployment's security requirements, operational constraints, and connectors: benchmark passes show only what the verifier covers under the benchmark conditions. [S1] [S3] [S5]
+
+The authors caution that internet access and differences in computing resources can affect reproducibility, and that some tasks may still fall short of the verification criteria despite review. Internet access could also allow an agent to find a reference solution, although the authors report not observing this in their trajectories; training on public benchmark tasks is another contamination concern. [S5]
 
 ## How
 
-![The agent receives an instruction and works in a prepared container. Afterward, tests check the resulting container state and report pass or fail.](arxiv-2601.11868.png)
+![Task architecture showing the instruction and container given to the agent, withheld task files, agent execution, and test results with one pass and two failures.](arxiv-2601.11868.png)
 
-*Original diagram based on [Figure 2, p. 3](https://arxiv.org/pdf/2601.11868v1#page=3) [S1]. Notice the handoff: the agent changes the container, then separate tests check the outcome. The reference solution demonstrates solvability; the agent does not receive it.*
+*[Figure 2, p. 3](https://arxiv.org/pdf/2601.11868v1#page=3), Merrill et al., Terminal-Bench ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); cropped): “A Terminal-Bench task is composed of an instruction, a Dockerfile, a set of tests, and an oracle solution. Agents run inside a container into which the tests are copied and executed.” [S1] Notice that the reference solution is not supplied to the agent; the example test run has failures, so it does not resolve the task.*
 
 1. Start a trial with the task's container image and instruction, under its time limit. [S1]
 2. Let the agent inspect and change the environment using its tools. Harbor runs the benchmark; Terminus 2 uses only a headless terminal, but the benchmark does not require every scaffold to do so. [S1] [S3]

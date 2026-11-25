@@ -15,6 +15,7 @@ sources:
   S4: "Section 4 and Figure 6, pp. 11–13; Appendix E.2, pp. 25–26; Appendix F, Table 11, p. 27"
   S5: "Sections 5–6 and Table 2, pp. 14–15"
   S6: "Appendix B, Equations 1–4, pp. 20–21"
+  S7: "Appendix D, Tables 9–10, p. 24"
 relationships:
   - paper: arxiv-2611.14320
     type: contrasts_with
@@ -28,12 +29,12 @@ relationships:
 
 ## Overview
 
-**Context** is what the AI model can see at one time: the task, previous messages, and results from tools such as a test runner. The paper asks whether giving the model less to read at each step can save computing work without making the model much worse at the task. The researchers changed what they sent to the model, not how the model was trained. [S1] [S2]
+The paper tests whether an AI agent can work with less information in view at each step, saving computing work without losing much task accuracy. **Context** is what the model can see at one time: the task, previous messages, and results from tools such as a test runner. The researchers changed what they sent to existing models, not how the models were trained. [S1] [S2]
 
 - **When the work takes many steps:** Imagine an AI coding assistant fixing a bug. Instead of passing every earlier command and test result into the next conversation, the assistant writes a short note: “I changed the date parser. The time-zone test still fails. Check how the parser handles UTC next.” The next conversation starts with the original task and that note. The paper calls replacing the old messages with a short note **compaction**. [S2] [S3]
 - **When the source material is long:** Imagine the same assistant needs to check a large API manual. Rather than putting the whole manual into the conversation, the researchers' setup leaves the manual in a file. The assistant searches the file and reads the relevant pages or passages as needed. [S2] [S4]
 
-On the tasks the researchers tested, the models usually did about as well as when given the full history or the full documents. **Old information can still matter.** If the note leaves out the exact error message, the assistant may need to look up that message in a saved log. The point is to avoid showing the model everything at once, not to throw away the original information. [S3] [S4] [S5]
+In the main experiments, the two closed-weight models usually did about as well as when given the full history or the full documents; some open-weight models lost much more accuracy under tight limits. **Old information can still matter.** If the note leaves out the exact error message, the assistant may need to look up that message in a saved log. The point is to avoid showing the model everything at once, not to throw away the original information. [S3] [S4] [S5] [S7]
 
 ## What
 
@@ -61,12 +62,14 @@ The study starts with either a task that generates a long sequence of tool actio
 
 An engineer building a coding agent can compare compaction policies on long patch-and-test tasks. Across six long-horizon benchmarks, at most 5 of 22 threshold configurations per model lost more than two percentage points versus full history. The authors separately tested per-action compaction on SWE-bench Verified and Terminal-Bench 2.1. On SWE-bench Verified, GPT 5.6 Sol went from 84.4% to 82.4% resolved, while median peak context fell from 18K to 7K tokens. [S3] [S5]
 
-Those scores measure task success, not whether the agent can recall arbitrary details from earlier turns. For workflows that need exact old tool output, the authors suggest storing the trace separately and making it searchable; they do not establish that a compact summary alone can reproduce it. They also do not show that short context suffices for every workload. [S3] [S5]
+The outcome depends on the model and context budget: in a separate experiment on SWE-bench Verified, the quantized open-weight Qwen 3 Coder Next fell from 53.0% resolved with full history to 3.6% with EoCC at a 16K total limit and 12K compaction threshold. The authors attribute much of that drop to verbose runs leaving too little room for progress between compactions. [S7]
+
+Those scores measure task success, not whether the agent can recall arbitrary details from earlier turns. For workflows that need exact old tool output, the authors suggest storing the trace separately and making it searchable; they do not establish that a compact summary alone can reproduce it. They also do not show that short context suffices for every workload. An engineer should separately check retrieval, task success, and actual latency and billing in the intended environment. [S3] [S5] [S6]
 
 ## How
 
 1. **Keep the action loop.** Give the model the task. It takes an action, sees the result, and uses that observation to choose what to do next. Full history leaves those turns in one conversation. [S2]
-2. **Start a new conversation with a progress note.** With EoCC, once the conversation reaches a set length, ask the model to write a short note about what it found, what it changed, and what to do next. Start the new conversation with the same instructions, the original task, and the note. With SAC, write that note after every tool action and its result. [S2] [S3]
+2. **Start a new conversation with a progress note.** With EoCC, once the conversation crosses a set threshold, ask the model to write a short note about what it found, what it changed, and what to do next. A higher total context limit reserves room to write the note; the conversation terminates if the note is not completed in time. Start the new conversation with the same instructions, the original task, and the note. With SAC, write that note after every tool action and its result. [S2] [S3]
 3. **Keep large source inputs outside the prompt.** For long-input benchmarks, give the agent the question and file information. It searches and reads bounded passages, and uses EoCC if that working conversation grows too large. [S2] [S4]
 4. **Compare outcomes and token use separately.** Sparse reads and shorter conversations change both what evidence the agent sees and what inference consumes. The authors report benchmark scores and token accounting; their optimized retail cost adds a context-dependent pricing assumption. [S3] [S4] [S6]
 
@@ -76,7 +79,7 @@ Those scores measure task success, not whether the agent can recall arbitrary de
 
 ## Worked Example
 
-**Paper example:** In a recorded LongBench v2 run, the question asks for a translation using a Kalamang grammar file of 18,830 lines. The agent searches for a word in the sentence, finds a hit at line 3,840, then requests lines 3,835–3,870: a 36-line excerpt that includes the hit. It follows up with another bounded read to check grammar and examples rather than treating the keyword match as the answer. The trace shows the intermediate evidence entering context, not a reported final translation, typical read size, or success rate. The benchmark scores the final multiple-choice answer separately. [S2] [S4]
+**Paper example:** In a recorded LongBench v2 run, the question asks for a translation using a Kalamang grammar file of 18,830 lines. The agent searches for the word *kademor* and finds a hit at line 3,840. It then requests lines 3,835–3,870: a 36-line excerpt that describes *kademor* as “to be mad” and discusses how the verb introduces an object. A further bounded read checks grammar and examples rather than treating the keyword match as the answer. The trace shows intermediate evidence entering context, not a reported final translation, typical read size, or success rate. The benchmark scores the final multiple-choice answer separately. [S2] [S4]
 
 ## Differentiators
 
@@ -97,6 +100,7 @@ Those scores measure task success, not whether the agent can recall arbitrary de
 - S4: Section 4 and Figure 6, pp. 11–13; Appendix E.2, pp. 25–26; Appendix F, Table 11, p. 27
 - S5: Sections 5–6 and Table 2, pp. 14–15
 - S6: Appendix B, Equations 1–4, pp. 20–21
+- S7: Appendix D, Tables 9–10, p. 24
 
 ## FAQ
 

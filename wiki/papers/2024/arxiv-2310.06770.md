@@ -32,11 +32,11 @@ relationships:
 
 ## Overview
 
-SWE-bench asks whether a language model can fix a real GitHub issue in an existing codebase, not just complete a standalone function. Given the issue and the repository at its pre-fix revision, the model submits a patch; the evaluator applies it, runs task-specific tests, and reports the percentage of issues resolved. [S1]
+SWE-bench asks whether a language model can fix a real GitHub issue in an existing codebase, not just complete a standalone function. Given the issue and the repository at its pre-fix revision, the model submits a patch (a file describing code changes); the evaluator applies it, runs task-specific tests, and reports the percentage of tasks resolved. [S1]
 
 ## What
 
-The original benchmark contains 2,294 tasks from 12 Python repositories. A task combines issue text, a repository revision, and evaluator-side tests derived from a merged pull request. The human patch helps establish which tests should change or stay green; the model's patch need not resemble it. [S1] [S2]
+The original benchmark contains 2,294 tasks from 12 Python repositories. A task combines issue text, a repository revision, and evaluator-side tests derived from a merged pull request (a proposed set of changes). The human fix helps establish which tests should change or stay green; the model's patch need not resemble it. [S1] [S2]
 
 ## Terminology
 
@@ -57,21 +57,21 @@ The original benchmark contains 2,294 tasks from 12 Python repositories. A task 
 
 ## When
 
-Use SWE-bench if you build a coding assistant and want to compare model or retrieval configurations on repository issue resolution. The paper compares commercial models such as Claude 3 Opus and GPT-4-turbo with tuned SWE-Llama variants under BM25 file retrieval. Hold the task set and context strategy fixed when comparing models: the score measures tested issues resolved under that setup, not general software engineering ability, maintainability, or coverage beyond the Python repositories sampled. [S4] [S5]
+Use SWE-bench if you build a coding assistant and want to compare model or retrieval configurations on repository issue resolution. The paper compares commercial models such as Claude 3 Opus and GPT-4-turbo with tuned SWE-Llama variants under BM25 file retrieval. Hold the task set and context strategy fixed when comparing models: the score measures tasks resolved under that setup, not general software engineering ability or coverage beyond the sampled Python repositories. The authors caution that passing tests alone does not guarantee a solution is comprehensive, efficient, or readable; assess those qualities separately. [S4] [S5]
 
 ## How
 
-1. **Construct tasks.** Start with merged pull requests that resolve an issue and change tests. Run those tests on the base revision and again with the human fix. Keep tasks with at least one failing test that the fix makes pass, and discard broken setups. [S1]
-2. **Generate a candidate.** Provide the issue and repository context. The paper's baseline prompts use selected files: BM25 ranks files by relevance to the issue, while the oracle comparison gives the model the files the human patch edited, information it would not normally have. [S1] [S4]
-3. **Score the candidate.** Apply the patch and run the task tests. A task counts as resolved only if every required FAIL_TO_PASS and PASS_TO_PASS test is present and passing. An unusable patch or a missing required passing result does not resolve the task. [S2]
+1. **Construct tasks.** Start with merged pull requests that resolve an issue and change tests. Apply the pull request's test changes to the base revision, run the tests, then run them again with the human code fix applied. Keep tasks with at least one failing test that the fix makes pass, and discard broken setups. [S1]
+2. **Generate a candidate.** Provide the issue and repository context. The paper's baseline prompts use selected files: BM25, a text-retrieval method, ranks files by relevance to the issue, while the oracle comparison gives the model the files the human patch edited, information it would not normally have. [S1] [S4]
+3. **Score the candidate.** The evaluator restores the base revision, applies the test changes and candidate patch, and runs the task tests. A task counts as resolved only if every required FAIL_TO_PASS and PASS_TO_PASS test is present and passing. An unusable patch or a missing required passing result does not resolve the task. [S2]
 
-![The issue and pre-fix repository lead to a candidate patch, which is checked against tests for the fix and regressions.](arxiv-2310.06770.png)
+![The repository and issue go to a language model, which generates a patch; an evaluation harness applies the patch and tests and logs the results.](arxiv-2310.06770.png)
 
-*Original diagram. A patch applying cleanly is not enough: both sets of required tests must pass. See [Section 2.2](https://arxiv.org/pdf/2310.06770v3#page=3) and [Appendix A.4](https://arxiv.org/pdf/2310.06770v3#page=20).*
+*Paper [Figure 8](https://arxiv.org/pdf/2310.06770v3#page=20), cropped; Jimenez et al., 2024, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Original caption: "Visualization of the evaluation pipeline at an individual task instance level. During evaluation, the Patch is model generated. A prediction .patch must be applied successfully and produce the same results as the corresponding task instance's D for task completion." The harness runs the tests against the candidate; Appendix A.4 specifies that the required fail-to-pass and pass-to-pass tests must pass, not necessarily every test category. The figure is a conceptual overview: the procedure applies the test changes before the candidate patch. [S2]*
 
 ## Worked Example
 
-**Paper example:** In Sphinx task `sphinx-8713`, the issue asks the Napoleon documentation extension to respect a configuration option when formatting “Other Parameters.” In the paper's oracle setting, the model gets the issue and the contents of the relevant file. It edits the right function, but makes it behave as though the option were always enabled. A test that disables the option fails. Even though the patch applied and many tests passed, the evaluator counts the issue as unresolved. [S2] [S3]
+**Paper example:** In Sphinx task `sphinx-8713`, the issue asks the Napoleon documentation extension to respect a configuration option when formatting “Other Parameters.” In the paper's oracle setting, the model gets the issue and the contents of the file edited by the human fix. The generated patch edits the right function but always uses the format for the enabled option. A test sets the option to false and checks the resulting documentation; it fails because the generated patch ignores that setting. Even though the patch applied and many tests passed, the evaluator counts the task as unresolved. [S2] [S3]
 
 ## Differentiators
 

@@ -13,6 +13,7 @@ sources:
   S2: "§3 (environment, task instances, reward, and pass^k), pp. 3–5; Figure 2"
   S3: "§4 (construction and domains), pp. 5–6; Table 1"
   S4: "§5 and §5.1 (experiments and main results), pp. 6–7; Table 2 and Figures 3–4"
+  S5: "§6 (Discussion: directions for improvement), pp. 8–9"
 relationships: []
 ---
 
@@ -20,11 +21,11 @@ relationships: []
 
 ## Overview
 
-τ-bench measures how reliably an agent can resolve a user's request when it has to ask questions, use tools, and follow a written policy. It checks the resulting database and required answers, then uses **pass^k** to measure how often a task succeeds on **every** one of *k* attempts. [S2]
+τ-bench measures how reliably a customer-service agent can resolve requests while asking questions, using tools, and following a written policy. It scores the resulting database and required answer text, then uses **pass^k** to estimate the chance that **every** one of *k* attempts succeeds, averaged across tasks. [S2]
 
 ## What
 
-This is a benchmark, not a new agent algorithm. The agent gets a domain policy and tools that read or change a database. A language model plays the user from a private scenario, so the agent often has to ask for information before it can act. The paper implements retail and airline environments. [S2] [S3]
+This is a benchmark, not a new agent algorithm. The agent gets a domain policy and tools that read or change a database; the database and task's expected outcome are not given directly to the agent. A language model plays the user from a private scenario, so the agent often has to ask for information before acting. The paper implements retail and airline environments. [S2] [S3]
 
 ## Terminology
 
@@ -33,36 +34,36 @@ This is a benchmark, not a new agent algorithm. The agent gets a domain policy a
 | Domain policy | The rules the agent is given for retail or airline tasks. [S2] [S3] | A tool may allow an action the policy prohibits, such as a return without confirmation. |
 | Task vs. episode | A task is the fixed scenario; an episode is one run of that scenario with the simulated user. [S2] | The same task can yield different conversations and outcomes. |
 | Target database state | The expected contents of the database after the task is completed. [S2] | The scorer checks the result, not whether the agent followed a reference sequence of tool calls. |
-| pass^k vs. pass@k | Success on **all** of *k* attempts vs. success on **at least one**. [S2] | The first measures consistency; the second measures whether retrying can produce a success. |
+| pass^k vs. pass@k | The chance of success on **all** of *k* attempts vs. **at least one**, averaged across tasks. [S2] | The first measures consistency; the second measures whether retrying can produce a success. |
 
 ## Why
 
 **Why solve this problem?** In customer service, the first message may not give the agent enough information or authorization to act. A valid tool call alone doesn't show that the agent resolved the request or followed the rules. [S1] [S2]
 
-**What did prior work do?** Tool-use benchmarks such as BFCL and ToolBench evaluated tool calls from an initial request; offline task-oriented dialogue benchmarks evaluated responses on fixed conversations. Neither setup tests whether an agent can ask for missing details as the dialogue unfolds and then use the answers to carry out a policy-constrained task. [S1]
+**What did prior work do?** The authors describe tool-use benchmarks such as BFCL and ToolBench as evaluating tool calls from an initial request containing the necessary information; offline task-oriented dialogue benchmarks used pre-collected conversations. These setups do not jointly test asking for missing details in a changing conversation and using the answers to carry out a policy-constrained task. [S1]
 
 **What does τ-bench do differently, and why?** It combines an adaptive simulated user, a domain policy, and tools that change a database in the same episode. Checking the final database and required answers lets different valid conversations earn credit, while repeating the task tests whether the agent can succeed across those variations. The scorer can still miss a skipped confirmation if the final state and answer are both right. [S2]
 
 ## When
 
-**Use τ-bench to compare customer-support agents on realistic, simulated retail and airline tasks.** For example, a shopper asks to return an item without saying which one. Can the agent ask for the missing detail, update the correct order, and tell the shopper the refund amount? The benchmark can check the order and the answer against an expected result, then repeat the task to see whether the agent succeeds when the conversation unfolds differently. [S2] [S3]
+**Use τ-bench to compare customer-support agents on simulated retail and airline tasks.** For example, a shopper asks to return an item without saying which one. Can the agent ask for the missing detail, update the correct order, and tell the shopper the refund amount? A passing score establishes that the final database matches the expected state and the required text appears in agent messages; repeated runs estimate consistency as the conversation varies. [S2] [S3]
 
-**Use a separate check for policy compliance or live performance.** The outcome score can miss a skipped confirmation if the order and answer are correct, and success with simulated users does not establish how the agent will perform with real customers. [S2] [S3]
+**Use a separate check for policy compliance, answer meaning, or live performance.** The outcome score can miss a skipped confirmation if the order and required text match; its substring check also does not verify the surrounding answer's meaning. The authors note that simulated users can misunderstand or depart from their instructions, and that the domains simplify real policies. Success with simulated users does not establish performance with real customers. [S2] [S3] [S5]
 
 ## How
 
-![The agent exchanges messages with a simulated user and calls database tools. The scorer checks the final database and required answers.](arxiv-2406.12045.png)
+![Paper diagram showing the agent between tools and a simulated user, alongside a flight cancellation dialogue and database actions.](arxiv-2406.12045.png)
 
-*Original diagram based on [Figure 1a, p. 2](https://arxiv.org/pdf/2406.12045v1#page=2) and §3 [S2]. The conversation and tool calls can vary; the final database and any required answers must both match.*
+*Cropped from [Figure 1, p. 2](https://arxiv.org/pdf/2406.12045v1#page=2), Yao et al., [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Paper caption: “(a) In τ-bench, an agent interacts with database API tools and an LM-simulated user to complete tasks. The benchmark tests an agent’s ability to collate and convey all required information from/to users through multiple interactions, and solve complex issues on the fly while ensuring it follows guidelines laid out in a domain-specific policy document. (b) An example trajectory in τ-airline, where an agent needs to reject the user request (change a basic economy flight) following domain policies and propose a new solution (cancel and rebook). This challenges the agent in long-context zero-shot reasoning over complex databases, rules, and user intents.” The example shows the agent checking a reservation, explaining the rule, and cancelling after the user responds.*
 
-1. Start with a task's database and a hidden user scenario. Give the agent the policy and available tools, but not the expected state.
-2. Let the agent alternate between user messages and API calls. The user simulator answers from its scenario and conversation history; tools return observations and may change state.
-3. Give the episode a 1 only if the final database matches the target and the user-facing messages include all required outputs; otherwise give it a 0.
-4. Repeat the same task from the same starting conditions. Compute the fraction of all-success sets of *k* trials for each task, then average per-task estimates. [S2]
+1. Start with a task's database and a hidden user scenario. Give the agent the policy and available tools, but not the scenario or expected state.
+2. Let the agent alternate between user messages and API calls. The simulated user answers from its scenario and conversation history; tools return observations and may change the database.
+3. Give the episode a 1 only if the final database matches the target and the agent's messages to the user contain every required output as an exact substring; otherwise give it a 0. If no outputs are required, the database check still applies.
+4. Repeat the same task from the same starting conditions. For each task, estimate pass^k as the fraction of sets of *k* distinct trials in which all trials succeeded, then average the per-task estimates. The paper assumes independent trials drawn from the same task setup. [S2]
 
 ## Worked Example
 
-**Illustrative example:** A shopper asks to return one item and wants the refund amount. The hidden scenario specifies which item. The agent asks which item, gets confirmation, calls the return tool for that item, and tells the shopper the refund is $20. The expected order state and the required answer both match, so the run scores 1. If it updates the correct order state but omits the amount, the run scores 0. [S2]
+**Illustrative example:** A shopper asks to return one item and wants the refund amount. The hidden scenario specifies which item; the target order state records a return request for that item, and the required text is `20.00`. The agent asks which item, gets explicit confirmation of the return, calls the return tool, and says the refund is $20.00. The final state matches and the required text appears, so the run scores 1. If the state matches but the agent never includes `20.00` in its messages, the run scores 0. A 1 alone would not prove the agent obtained the required confirmation. [S2] [S3]
 
 Suppose five runs of that task score `1, 1, 0, 1, 0`. One-run success is **3/5 = 60%**. Among the ten unordered pairs of distinct runs, three pairs have two successes: **pass^2 = 3/10 = 30%**. Nine pairs contain at least one success: **pass@2 = 9/10 = 90%**. The same agent can look much better when retrying until one attempt works than when every attempt must work. These are toy counts, not paper results. [S2]
 
@@ -77,7 +78,7 @@ In the paper's function-calling results, GPT-4o reached **61.2% retail** and **3
 
 ## Relationships
 
-No related paper pages are in this wiki yet. For comparison with existing work on function calling, start with the papers named under **Differentiators**. [S1]
+For comparison with existing work on function calling, start with the papers named under **Differentiators**. [S1]
 
 ## Technical Depth
 
@@ -99,6 +100,7 @@ The authors first designed database schemas, API behavior, and policy together. 
 - S2: §3 (environment, task instances, reward, and pass^k), pp. 3–5; Figure 2
 - S3: §4 (construction and domains), pp. 5–6; Table 1
 - S4: §5 and §5.1 (experiments and main results), pp. 6–7; Table 2 and Figures 3–4
+- S5: §6 (Discussion: directions for improvement), pp. 8–9
 
 ## FAQ
 
